@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:cms": "tsx scripts/seed-cms-admin.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",
