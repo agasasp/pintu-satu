@@ -23,7 +23,10 @@ export function ComproFooter() {
           <a href="#harga" className="hover:text-[#1C1B18] transition-colors">
             Harga
           </a>
-          <Link href="/login" className="hover:text-[#6F4E37] font-semibold transition-colors">
+          <Link
+            href="/login"
+            className="hover:text-[#6F4E37] font-semibold transition-colors cursor-pointer"
+          >
             Masuk Akun
           </Link>
         </div>

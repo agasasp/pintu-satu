@@ -44,7 +44,7 @@ export function ComproNavbar({ onOpenTrialModal }: ComproNavbarProps) {
         <div className="hidden md:flex items-center gap-4">
           <Link
             href="/login"
-            className="text-xs font-semibold text-[#1C1B18] hover:text-[#6F4E37] transition-colors"
+            className="text-xs font-semibold text-[#1C1B18] hover:text-[#6F4E37] transition-colors cursor-pointer"
           >
             Masuk
           </Link>
@@ -104,7 +104,8 @@ export function ComproNavbar({ onOpenTrialModal }: ComproNavbarProps) {
           <div className="pt-2 border-t border-[#E6E3DC] flex flex-col gap-2">
             <Link
               href="/login"
-              className="w-full py-2 text-center text-xs font-semibold text-[#1C1B18] bg-[#F9F8F6] border border-[#E6E3DC] rounded-lg hover:bg-[#E6E3DC]/40 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full py-2 text-center text-xs font-semibold text-[#1C1B18] bg-[#F9F8F6] border border-[#E6E3DC] rounded-lg hover:bg-[#E6E3DC]/40 transition-colors cursor-pointer"
             >
               Masuk Akun
             </Link>
