@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
 interface ComproNavbarProps {
@@ -9,7 +10,31 @@ interface ComproNavbarProps {
 }
 
 export function ComproNavbar({ onOpenTrialModal }: ComproNavbarProps) {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleQuickLogin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      const ownerUser = {
+        id: "owner-andi-pratama",
+        name: "Andi Pratama",
+        email: "andi.pratama@kostara.id",
+        role: "pemilik_kost",
+        kostName: "Kost Cemara",
+        location: "Sukajadi, Bandung",
+        roomCount: 32,
+      };
+      localStorage.setItem("pintusatu_token", "demo-token-andi-pratama-kostara-2026");
+      localStorage.setItem("token", "demo-token-andi-pratama-kostara-2026");
+      localStorage.setItem("pintusatu_user", JSON.stringify(ownerUser));
+      localStorage.setItem("pintusatu_role", "pemilik_kost");
+      document.cookie = `pintusatu_token=demo-token-andi-pratama-kostara-2026; path=/; max-age=604800; SameSite=Lax`;
+    } catch (err) {
+      console.warn("Storage warning:", err);
+    }
+    router.push("/dashboard");
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E6E3DC]">
@@ -42,12 +67,12 @@ export function ComproNavbar({ onOpenTrialModal }: ComproNavbarProps) {
 
         {/* Right Action Buttons */}
         <div className="hidden md:flex items-center gap-4">
-          <Link
-            href="/login"
-            className="text-xs font-semibold text-[#1C1B18] hover:text-[#6F4E37] transition-colors"
+          <button
+            onClick={handleQuickLogin}
+            className="text-xs font-semibold text-[#1C1B18] hover:text-[#6F4E37] transition-colors cursor-pointer"
           >
             Masuk
-          </Link>
+          </button>
           <button
             onClick={() => onOpenTrialModal("Daftar Sekarang")}
             className="px-4 py-2 text-xs font-semibold text-white bg-[#6F4E37] hover:bg-[#563B28] rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer hover:scale-[1.03] active:scale-[0.98]"
@@ -102,12 +127,15 @@ export function ComproNavbar({ onOpenTrialModal }: ComproNavbarProps) {
             Harga
           </a>
           <div className="pt-2 border-t border-[#E6E3DC] flex flex-col gap-2">
-            <Link
-              href="/login"
-              className="w-full py-2 text-center text-xs font-semibold text-[#1C1B18] bg-[#F9F8F6] border border-[#E6E3DC] rounded-lg hover:bg-[#E6E3DC]/40 transition-colors"
+            <button
+              onClick={(e) => {
+                setMobileMenuOpen(false);
+                handleQuickLogin(e);
+              }}
+              className="w-full py-2 text-center text-xs font-semibold text-[#1C1B18] bg-[#F9F8F6] border border-[#E6E3DC] rounded-lg hover:bg-[#E6E3DC]/40 transition-colors cursor-pointer"
             >
               Masuk Akun
-            </Link>
+            </button>
             <button
               type="button"
               onClick={() => {

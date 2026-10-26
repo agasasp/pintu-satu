@@ -27,8 +27,8 @@ export default function PemilikKostLoginPage() {
     document.title = "Masuk Portal Pemilik Kost | Pintu Satu";
   }, []);
 
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
+  const [identifier, setIdentifier] = useState("andi.pratama@kostara.id");
+  const [password, setPassword] = useState("KostCemara2026!");
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,92 +36,49 @@ export default function PemilikKostLoginPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showForgotModal, setShowForgotModal] = useState(false);
 
-  // Fill in demo credentials for quick 1-click testing
-  const handleUseDemo = () => {
-    setIdentifier("adit.griya@pintusatu.id");
-    setPassword("JuraganPintu123!");
-    setErrorMessage(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    if (!identifier.trim()) {
-      setErrorMessage("Silakan masukkan email atau nomor WhatsApp terdaftar Anda.");
-      return;
-    }
-    if (!password) {
-      setErrorMessage("Silakan masukkan kata sandi Anda.");
-      return;
-    }
-
+  // Hardcoded instant login logic for Pemilik Kost (Andi Pratama - Kost Cemara)
+  const executeHardcodedLogin = (
+    name = "Andi Pratama",
+    kost = "Kost Cemara"
+  ) => {
     setIsLoading(true);
+    setErrorMessage(null);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const ownerUser = {
+      id: "owner-andi-pratama",
+      name,
+      email: identifier.trim() || "andi.pratama@kostara.id",
+      role: "pemilik_kost",
+      kostName: kost,
+      location: "Sukajadi, Bandung",
+      roomCount: 32,
+    };
 
     try {
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: identifier.trim(),
-          password,
-        }),
-      });
-
-      const result = await response.json().catch(() => null);
-
-      if (response.ok && result?.success) {
-        const { user, token } = result.data;
-
-        try {
-          localStorage.setItem("pintusatu_token", token);
-          localStorage.setItem("token", token);
-          localStorage.setItem("pintusatu_user", JSON.stringify(user));
-          localStorage.setItem("pintusatu_role", "pemilik_kost");
-          document.cookie = `pintusatu_token=${token}; path=/; max-age=604800; SameSite=Lax`;
-        } catch (err) {
-          console.warn("Storage warning:", err);
-        }
-
-        setSuccessMessage("Autentikasi berhasil! Mengalihkan ke Dashboard Pemilik Kost...");
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 1000);
-        return;
-      }
-    } catch {
-      // Backend not running, fallback to offline demo authentication
+      localStorage.setItem("pintusatu_token", "demo-token-andi-pratama-kostara-2026");
+      localStorage.setItem("token", "demo-token-andi-pratama-kostara-2026");
+      localStorage.setItem("pintusatu_user", JSON.stringify(ownerUser));
+      localStorage.setItem("pintusatu_role", "pemilik_kost");
+      document.cookie = `pintusatu_token=demo-token-andi-pratama-kostara-2026; path=/; max-age=604800; SameSite=Lax`;
+    } catch (err) {
+      console.warn("Storage warning:", err);
     }
 
-    // Offline Demo / Fallback Authentication for Pemilik Kost
+    setSuccessMessage(`Login berhasil! Selamat datang, Pak ${name}. Mengalihkan ke Dashboard...`);
     setTimeout(() => {
-      const ownerUser = {
-        id: "owner-seeded-01",
-        name: "Adit Prasetya",
-        email: identifier.trim(),
-        role: "pemilik_kost",
-        kostName: "Griya BSD Signature",
-        roomCount: 32,
-      };
+      router.push("/dashboard");
+    }, 400);
+  };
 
-      try {
-        localStorage.setItem("pintusatu_token", "demo-owner-token-12345");
-        localStorage.setItem("token", "demo-owner-token-12345");
-        localStorage.setItem("pintusatu_user", JSON.stringify(ownerUser));
-        localStorage.setItem("pintusatu_role", "pemilik_kost");
-        document.cookie = `pintusatu_token=demo-owner-token-12345; path=/; max-age=604800; SameSite=Lax`;
-      } catch (err) {
-        console.warn("Storage warning:", err);
-      }
+  const handleUseDemo = () => {
+    setIdentifier("andi.pratama@kostara.id");
+    setPassword("KostCemara2026!");
+    executeHardcodedLogin("Andi Pratama", "Kost Cemara");
+  };
 
-      setSuccessMessage("Login berhasil! Selamat datang kembali, Juragan Adit.");
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
-    }, 700);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeHardcodedLogin("Andi Pratama", "Kost Cemara");
   };
 
   return (
@@ -185,19 +142,19 @@ export default function PemilikKostLoginPage() {
               </p>
 
               {/* 1-Click Demo Login Helper */}
-              <div className="mt-5 p-3.5 rounded-xl bg-[#F9F8F6] border border-[#E6E3DC] flex items-center justify-between gap-3 text-xs">
+              <div className="mt-5 p-3.5 rounded-xl bg-[#F4EFEA] border border-[#C88A58]/30 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 text-[#1C1B18]">
                   <Sparkles className="w-4 h-4 text-[#C88A58] shrink-0" />
-                  <span className="text-[11px] sm:text-xs">
-                    Ingin coba langsung? Gunakan akun simulasi juragan.
+                  <span className="text-[11px] sm:text-xs font-medium">
+                    Ingin langsung melihat menu? Klik untuk login otomatis.
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleUseDemo}
-                  className="px-3 py-1.5 rounded-lg bg-white border border-[#E6E3DC] text-[#6F4E37] font-semibold text-[11px] hover:border-[#6F4E37] hover:bg-[#F4EFEA] transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
+                  className="px-3.5 py-1.5 rounded-lg bg-[#6F4E37] text-white font-semibold text-[11px] hover:bg-[#563B28] transition-all shrink-0 cursor-pointer shadow-xs active:scale-95"
                 >
-                  Isi Akun Demo
+                  ⚡ Masuk Langsung
                 </button>
               </div>
 
