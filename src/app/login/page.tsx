@@ -23,12 +23,8 @@ import {
 export default function PemilikKostLoginPage() {
   const router = useRouter();
 
-  useEffect(() => {
-    document.title = "Masuk Portal Pemilik Kost | Pintu Satu";
-  }, []);
-
-  const [identifier, setIdentifier] = useState("andi.pratama@kostara.id");
-  const [password, setPassword] = useState("KostCemara2026!");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,49 +32,134 @@ export default function PemilikKostLoginPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showForgotModal, setShowForgotModal] = useState(false);
 
-  // Hardcoded instant login logic for Pemilik Kost (Andi Pratama - Kost Cemara)
-  const executeHardcodedLogin = (
-    name = "Andi Pratama",
-    kost = "Kost Cemara"
-  ) => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
+  useEffect(() => {
+    document.title = "Masuk Portal Pemilik Kost | Pintu Satu";
+
+    // 1. Tangkap query param email & status dari hasil registrasi atau pembayaran
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get("email");
+      const isRegistered = params.get("registered");
+      const paymentStatus = params.get("payment");
+
+      if (emailParam || isRegistered || paymentStatus) {
+        queueMicrotask(() => {
+          if (emailParam) {
+            setIdentifier(emailParam);
+            setPassword(""); // Kosongkan password agar user langsung memasukkan kata sandinya
+          }
+
+          if (isRegistered === "true") {
+            setSuccessMessage(
+              "Akun trial Anda berhasil dibuat! Silakan masukkan kata sandi untuk masuk ke akun kost Anda."
+            );
+          } else if (paymentStatus === "success") {
+            setSuccessMessage(
+              "Pembayaran paket langganan berhasil! Akun Anda aktif. Silakan masukkan kata sandi untuk masuk."
+            );
+          } else if (paymentStatus === "pending") {
+            setSuccessMessage(
+              "Transaksi pembayaran Anda sedang diproses oleh Midtrans. Silakan selesaikan pembayaran lalu masuk ke akun Anda."
+            );
+          }
+        });
+      }
+    }
+  }, []);
+
+  // 2. Eksekusi API Call (handleLogin) ke POST /api/login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
 
-    const ownerUser = {
-      id: "owner-andi-pratama",
-      name,
-      email: identifier.trim() || "andi.pratama@kostara.id",
-      role: "pemilik_kost",
-      kostName: kost,
-      location: "Sukajadi, Bandung",
-      roomCount: 32,
+    const payload = {
+      email: identifier.trim(),
+      password,
     };
 
     try {
-      localStorage.setItem("pintusatu_token", "demo-token-andi-pratama-kostara-2026");
-      localStorage.setItem("token", "demo-token-andi-pratama-kostara-2026");
-      localStorage.setItem("pintusatu_user", JSON.stringify(ownerUser));
-      localStorage.setItem("pintusatu_role", "pemilik_kost");
-      document.cookie = `pintusatu_token=demo-token-andi-pratama-kostara-2026; path=/; max-age=604800; SameSite=Lax`;
-    } catch (err) {
-      console.warn("Storage warning:", err);
-    }
+      const response = await fetch(`${apiUrl}/api/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-    setSuccessMessage(`Login berhasil! Selamat datang, Pak ${name}. Mengalihkan ke Dashboard...`);
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 400);
+      const data = await response.json();
+
+      // Penanganan Respons Gagal / Validasi Status Akun
+      if (!response.ok || data.status === "error") {
+        let errText = "Login gagal. Silakan periksa kembali email dan kata sandi Anda.";
+
+        if (response.status === 403) {
+          // Kasus Akun belum aktif / status pending_payment
+          errText =
+            data.message ||
+            "Akun Anda belum aktif. Silakan selesaikan pembayaran paket langganan Anda terlebih dahulu.";
+        } else if (response.status === 401) {
+          // Kredensial email atau password salah
+          errText = data.message || "Email atau kata sandi yang Anda masukkan salah.";
+        } else if (data?.errors && typeof data.errors === "object") {
+          const errorList = Object.values(data.errors).flat();
+          if (errorList.length > 0) {
+            errText = errorList.join(" ");
+          } else if (data.message) {
+            errText = data.message;
+          }
+        } else if (data?.message) {
+          errText = data.message;
+        }
+
+        setErrorMessage(errText);
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Login Berhasil: Simpan Token & User ke localStorage
+      const token = data.data?.token;
+      const user = data.data?.user;
+
+      if (token) {
+        localStorage.setItem("token", token);
+        localStorage.setItem("pintusatu_token", token);
+        document.cookie = `pintusatu_token=${token}; path=/; max-age=604800; SameSite=Lax`;
+      }
+
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("pintusatu_user", JSON.stringify(user));
+        localStorage.setItem("pintusatu_role", user.role || "owner");
+      }
+
+      setSuccessMessage(
+        `Login berhasil! Selamat datang, ${user?.name || "Bpk/Ibu"}. Mengalihkan ke Dashboard...`
+      );
+
+      // Redirect langsung ke Dashboard
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 400);
+    } catch (err: unknown) {
+      console.error("Login API error:", err);
+      setErrorMessage(
+        "Tidak dapat terhubung ke server. Pastikan server backend Pintu Satu sedang berjalan."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // Demo Login Cepat (1-Click)
   const handleUseDemo = () => {
     setIdentifier("andi.pratama@kostara.id");
     setPassword("KostCemara2026!");
-    executeHardcodedLogin("Andi Pratama", "Kost Cemara");
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    executeHardcodedLogin("Andi Pratama", "Kost Cemara");
+    setErrorMessage(null);
   };
 
   return (
@@ -180,7 +261,7 @@ export default function PemilikKostLoginPage() {
               )}
 
               {/* Login Form */}
-              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <form onSubmit={handleLogin} className="mt-6 space-y-4">
                 {/* Identifier Input (WhatsApp / Email) */}
                 <div>
                   <label
