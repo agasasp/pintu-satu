@@ -83,16 +83,14 @@ export function ComproTrialModal({
         return;
       }
 
-      // Penanganan Respons & Auto-Login: Simpan token autentikasi
-      if (data?.data?.token) {
-        localStorage.setItem("token", data.data.token);
-      }
-      if (data?.data?.user) {
-        localStorage.setItem("user", JSON.stringify(data.data.user));
-      }
+      // Tutup modal terlebih dahulu
+      onClose();
 
-      // Beri notifikasi ke parent jika dibutuhkan
+      // Panggil callback parent jika dibutuhkan
       onSubmitSuccess?.(ownerName, kostName, targetPackageId);
+
+      // Simpan email terdaftar sebelum form di-reset
+      const registeredEmail = email.trim();
 
       // Reset Form
       setOwnerName("");
@@ -102,11 +100,8 @@ export function ComproTrialModal({
       setWhatsapp("");
       setRoomTotal("10");
 
-      // Tutup modal
-      onClose();
-
-      // Redirect langsung ke dashboard
-      router.push("/dashboard");
+      // Redirect user ke halaman login (/login) dengan query param email otomatis
+      router.push(`/login?email=${encodeURIComponent(registeredEmail)}&registered=true`);
     } catch (err: unknown) {
       console.error("Trial registration error:", err);
       setErrorMessage("Tidak dapat terhubung ke server. Pastikan backend Pintu Satu sedang berjalan.");

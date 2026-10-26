@@ -23,10 +23,6 @@ import {
 export default function PemilikKostLoginPage() {
   const router = useRouter();
 
-  useEffect(() => {
-    document.title = "Masuk Portal Pemilik Kost | Pintu Satu";
-  }, []);
-
   const [identifier, setIdentifier] = useState("andi.pratama@kostara.id");
   const [password, setPassword] = useState("KostCemara2026!");
   const [rememberMe, setRememberMe] = useState(true);
@@ -35,6 +31,32 @@ export default function PemilikKostLoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showForgotModal, setShowForgotModal] = useState(false);
+
+  useEffect(() => {
+    document.title = "Masuk Portal Pemilik Kost | Pintu Satu";
+
+    // Tangkap query param email dari hasil registrasi trial
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get("email");
+      const isRegistered = params.get("registered");
+
+      if (emailParam || isRegistered) {
+        queueMicrotask(() => {
+          if (emailParam) {
+            setIdentifier(emailParam);
+            setPassword(""); // Kosongkan password agar user memasukkan kata sandinya
+          }
+
+          if (isRegistered === "true") {
+            setSuccessMessage(
+              "Akun trial Anda berhasil dibuat! Silakan masukkan kata sandi untuk masuk ke akun kost Anda."
+            );
+          }
+        });
+      }
+    }
+  }, []);
 
   // Hardcoded instant login logic for Pemilik Kost (Andi Pratama - Kost Cemara)
   const executeHardcodedLogin = (
