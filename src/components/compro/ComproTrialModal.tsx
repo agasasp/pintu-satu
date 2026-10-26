@@ -5,13 +5,15 @@ import { useState } from "react";
 interface ComproTrialModalProps {
   isOpen: boolean;
   selectedPlan: string;
+  packageId?: number;
   onClose: () => void;
-  onSubmitSuccess: (ownerName: string, kostName: string) => void;
+  onSubmitSuccess: (ownerName: string, kostName: string, packageId?: number) => void;
 }
 
 export function ComproTrialModal({
   isOpen,
   selectedPlan,
+  packageId,
   onClose,
   onSubmitSuccess,
 }: ComproTrialModalProps) {
@@ -24,7 +26,7 @@ export function ComproTrialModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmitSuccess(ownerName, kostName);
+    onSubmitSuccess(ownerName, kostName, packageId);
     setOwnerName("");
     setKostName("");
     setWhatsapp("");
