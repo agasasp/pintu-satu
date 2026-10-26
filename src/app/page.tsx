@@ -20,6 +20,7 @@ import { ToastNotification } from "@/components/shared/ToastNotification";
 export default function PintuSatuLanding() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("Paket Juragan Pro");
+  const [selectedPackageId, setSelectedPackageId] = useState<number | undefined>(undefined);
 
   // Toast state
   const [toast, setToast] = useState<{ show: boolean; title: string; desc: string }>({
@@ -35,8 +36,9 @@ export default function PintuSatuLanding() {
     }, 3500);
   };
 
-  const handleOpenModal = (planName: string = "Uji Coba Gratis") => {
+  const handleOpenModal = (planName: string = "Uji Coba Gratis", packageId?: number) => {
     setSelectedPlan(planName);
+    setSelectedPackageId(packageId);
     setIsModalOpen(true);
   };
 
@@ -83,6 +85,7 @@ export default function PintuSatuLanding() {
       <ComproTrialModal
         isOpen={isModalOpen}
         selectedPlan={selectedPlan}
+        packageId={selectedPackageId}
         onClose={() => setIsModalOpen(false)}
         onSubmitSuccess={handleModalSubmitSuccess}
       />
