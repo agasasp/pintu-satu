@@ -168,7 +168,7 @@ export function PemilikKostSidebar({
         {/* Divider */}
         <div className="h-px bg-[#E6E3DC] mx-2" />
 
-        {/* Secondary Menu (Tim & Bantuan) */}
+        {/* Secondary Menu (Tim & Bantuan & Logout) */}
         <div className="space-y-1">
           {secondaryMenuItems.map((item) => {
             const Icon = item.icon;
@@ -196,6 +196,14 @@ export function PemilikKostSidebar({
               </Link>
             );
           })}
+
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-[#8C887F] hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer text-left group"
+          >
+            <LogOut className="w-4 h-4 text-[#8C887F] group-hover:text-red-600 transition-colors" />
+            <span>Keluar (Logout)</span>
+          </button>
         </div>
       </div>
 
@@ -231,23 +239,32 @@ export function PemilikKostSidebar({
 
         {/* User Profile Selector */}
         <div className="relative">
-          <button
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-[#F9F8F6] transition-colors cursor-pointer border border-transparent hover:border-[#E6E3DC]"
-          >
-            <div className="flex items-center gap-2.5 text-left">
-              <div className="w-8 h-8 rounded-full bg-[#6F4E37] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                AP
-              </div>
-              <div className="truncate">
-                <div className="text-xs font-bold text-[#1C1B18] truncate leading-tight">
-                  Andi Pratama
+          <div className="flex items-center justify-between p-1.5 rounded-xl hover:bg-[#F9F8F6] transition-colors border border-transparent hover:border-[#E6E3DC]">
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center justify-between gap-2 text-left flex-1 min-w-0 cursor-pointer pr-1 group"
+            >
+              <div className="flex items-center gap-2.5 truncate">
+                <div className="w-8 h-8 rounded-full bg-[#6F4E37] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                  AP
                 </div>
-                <div className="text-[10px] text-[#8C887F]">Pemilik kost</div>
+                <div className="truncate">
+                  <div className="text-xs font-bold text-[#1C1B18] truncate leading-tight">
+                    Andi Pratama
+                  </div>
+                  <div className="text-[10px] text-[#8C887F]">Pemilik kost</div>
+                </div>
               </div>
-            </div>
-            <ChevronsUpDown className="w-3.5 h-3.5 text-[#8C887F] shrink-0" />
-          </button>
+              <ChevronsUpDown className="w-3.5 h-3.5 text-[#8C887F] shrink-0 group-hover:text-[#1C1B18]" />
+            </button>
+            <button
+              onClick={onLogout}
+              className="p-1.5 rounded-lg text-[#8C887F] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+              title="Keluar dari akun"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
 
           {/* Profile Dropdown Menu */}
           {showProfileMenu && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Building2,
   ChevronDown,
@@ -10,22 +11,39 @@ import {
   AlertCircle,
   Plus,
   X,
+  LogOut,
+  User,
+  ExternalLink,
 } from "lucide-react";
+import { useDashboard } from "./DashboardContext";
 
 interface PemilikKostTopNavProps {
   currentProperty: string;
   currentLocation: string;
   onPropertyChange: (name: string, loc: string) => void;
   onOpenRecordPayment?: () => void;
+  onLogout?: () => void;
 }
 
 export function PemilikKostTopNav({
   currentProperty,
   currentLocation,
   onPropertyChange,
+  onLogout,
 }: PemilikKostTopNavProps) {
+  const { logout } = useDashboard();
   const [showPropertyDropdown, setShowPropertyDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  const handleLogout = () => {
+    setShowUserDropdown(false);
+    if (onLogout) {
+      onLogout();
+    } else {
+      logout();
+    }
+  };
 
   const propertyOptions = [
     { name: "Kost Cemara", location: "Sukajadi, Bandung", rooms: 32 },
@@ -201,9 +219,72 @@ export function PemilikKostTopNav({
           )}
         </div>
 
-        {/* User initials circle */}
-        <div className="w-9 h-9 rounded-full bg-[#F4EFEA] border border-[#E6E3DC] text-[#6F4E37] flex items-center justify-center font-bold text-xs select-none shadow-xs">
-          AP
+        {/* Dedicated Logout Action Button */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#5C5952] hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all cursor-pointer shadow-2xs group"
+          title="Keluar dari akun dan langsung ke halaman login"
+        >
+          <LogOut className="w-3.5 h-3.5 text-[#8C887F] group-hover:text-red-600 transition-colors" />
+          <span className="hidden sm:inline">Keluar</span>
+        </button>
+
+        {/* User initials & profile dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowUserDropdown(!showUserDropdown)}
+            className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-[#F9F8F6] transition-colors cursor-pointer border border-transparent hover:border-[#E6E3DC]"
+            title="Menu Akun"
+          >
+            <div className="w-8 h-8 rounded-full bg-[#6F4E37] text-white flex items-center justify-center font-bold text-xs select-none shadow-xs">
+              AP
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 text-[#8C887F] hidden sm:block" />
+          </button>
+
+          {showUserDropdown && (
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl border border-[#E6E3DC] shadow-xl py-2 z-50 text-xs">
+              <div className="px-4 py-2.5 border-b border-[#E6E3DC]">
+                <div className="font-bold text-[#1C1B18] text-sm">Andi Pratama</div>
+                <div className="text-[11px] text-[#8C887F] truncate">andi.pratama@kostara.id</div>
+                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F4EFEA] text-[#6F4E37] border border-[#E6E3DC]">
+                  Pemilik Kost
+                </span>
+              </div>
+
+              <div className="py-1">
+                <Link
+                  href="/dashboard/pengaturan"
+                  onClick={() => setShowUserDropdown(false)}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-[#5C5952] hover:bg-[#F9F8F6] hover:text-[#1C1B18] transition-colors cursor-pointer"
+                >
+                  <User className="w-4 h-4 text-[#8C887F]" />
+                  <span>Profil &amp; Pengaturan</span>
+                </Link>
+
+                <Link
+                  href="/"
+                  onClick={() => setShowUserDropdown(false)}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-[#5C5952] hover:bg-[#F9F8F6] hover:text-[#1C1B18] transition-colors cursor-pointer"
+                >
+                  <ExternalLink className="w-4 h-4 text-[#8C887F]" />
+                  <span>Lihat Website Utama</span>
+                </Link>
+              </div>
+
+              <div className="h-px bg-[#E6E3DC] my-1" />
+
+              <div className="px-2 pt-1">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 text-left font-semibold transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-red-600" />
+                  <span>Keluar (Logout)</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

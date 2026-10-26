@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState } from "react";
+import { useRouter } from "next/navigation";
+import { clearAuthSession } from "@/lib/auth";
 import { ToastNotification } from "@/components/shared/ToastNotification";
 import { ModalCatatPembayaran } from "./ModalCatatPembayaran";
 import { ModalCatatPengeluaran } from "./ModalCatatPengeluaran";
@@ -17,6 +19,7 @@ interface DashboardContextType {
   currentProperty: string;
   currentLocation: string;
   setCurrentProperty: (name: string, location: string) => void;
+  logout: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
@@ -30,6 +33,7 @@ export function useDashboard() {
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [currentProperty, setProperty] = useState("Kost Cemara");
   const [currentLocation, setLocation] = useState("Sukajadi, Bandung");
 
@@ -55,6 +59,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => {
       setToast((prev) => ({ ...prev, show: false }));
     }, 3500);
+  };
+
+  const logout = () => {
+    try {
+      clearAuthSession();
+      localStorage.removeItem("pintusatu_token");
+      localStorage.removeItem("token");
+      localStorage.removeItem("pintusatu_user");
+      localStorage.removeItem("pintusatu_role");
+      sessionStorage.clear();
+      document.cookie = "pintusatu_token=; path=/; max-age=0;";
+    } catch {
+      // ignore
+    }
+    router.push("/login");
   };
 
   const setCurrentProperty = (name: string, location: string) => {
@@ -111,6 +130,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         currentProperty,
         currentLocation,
         setCurrentProperty,
+        logout,
       }}
     >
       {children}

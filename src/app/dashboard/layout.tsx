@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { PemilikKostSidebar } from "@/components/pemilik-kost/PemilikKostSidebar";
 import { PemilikKostTopNav } from "@/components/pemilik-kost/PemilikKostTopNav";
 import {
@@ -11,20 +10,11 @@ import {
 } from "@/components/pemilik-kost/DashboardContext";
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const { currentProperty, currentLocation, setCurrentProperty } = useDashboard();
+  const { currentProperty, currentLocation, setCurrentProperty, logout } = useDashboard();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    try {
-      localStorage.removeItem("pintusatu_token");
-      localStorage.removeItem("token");
-      localStorage.removeItem("pintusatu_user");
-      document.cookie = "pintusatu_token=; path=/; max-age=0;";
-    } catch {
-      // ignore
-    }
-    router.push("/login");
+    logout();
   };
 
   return (
@@ -75,8 +65,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <span className="font-extrabold text-sm text-[#1C1B18]">
             {currentProperty}
           </span>
-          <div className="w-8 h-8 rounded-full bg-[#6F4E37] text-white flex items-center justify-center font-bold text-xs">
-            AP
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-lg text-[#8C887F] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              title="Keluar dari akun"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+            <div className="w-8 h-8 rounded-full bg-[#6F4E37] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              AP
+            </div>
           </div>
         </div>
 
@@ -85,6 +84,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           currentProperty={currentProperty}
           currentLocation={currentLocation}
           onPropertyChange={setCurrentProperty}
+          onLogout={handleLogout}
         />
 
         {/* Main Content Body */}
