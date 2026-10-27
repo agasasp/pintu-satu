@@ -1,26 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Check, UserPlus } from "lucide-react";
 import { TenantItem } from "./types";
 
 interface ModalTambahPenghuniProps {
   isOpen: boolean;
   onClose: () => void;
+  initialRoomNumber?: string | null;
   onSubmit: (tenant: TenantItem) => void;
 }
 
 export function ModalTambahPenghuni({
   isOpen,
   onClose,
+  initialRoomNumber,
   onSubmit,
 }: ModalTambahPenghuniProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [roomNumber, setRoomNumber] = useState("A-06");
+  const [roomNumber, setRoomNumber] = useState(initialRoomNumber || "A-06");
   const [startDate, setStartDate] = useState("1 Nov 2026");
   const [endDate, setEndDate] = useState("31 Okt 2027");
   const [rentAmount, setRentAmount] = useState("1500000");
+
+  useEffect(() => {
+    if (initialRoomNumber) {
+      setRoomNumber(initialRoomNumber);
+    }
+  }, [initialRoomNumber, isOpen]);
 
   if (!isOpen) return null;
 

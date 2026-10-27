@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Check, Receipt } from "lucide-react";
 
 interface ModalCatatPembayaranProps {
   isOpen: boolean;
   onClose: () => void;
+  initialData?: {
+    roomNumber?: string;
+    tenantName?: string;
+    amount?: number;
+  } | null;
   onSubmit: (data: {
     roomNumber: string;
     tenantName: string;
@@ -18,6 +23,7 @@ interface ModalCatatPembayaranProps {
 export function ModalCatatPembayaran({
   isOpen,
   onClose,
+  initialData,
   onSubmit,
 }: ModalCatatPembayaranProps) {
   const [roomNumber, setRoomNumber] = useState("A-05");
@@ -25,6 +31,14 @@ export function ModalCatatPembayaran({
   const [amount, setAmount] = useState("1500000");
   const [paymentMethod, setPaymentMethod] = useState("Transfer Bank BCA");
   const [period, setPeriod] = useState("Oktober 2026");
+
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.roomNumber) setRoomNumber(initialData.roomNumber);
+      if (initialData.tenantName) setTenantName(initialData.tenantName);
+      if (initialData.amount) setAmount(initialData.amount.toString());
+    }
+  }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 

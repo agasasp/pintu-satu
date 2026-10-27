@@ -19,6 +19,7 @@ import {
   Building,
 } from "lucide-react";
 import { DashboardTab } from "./types";
+import { useDashboard } from "./DashboardContext";
 
 interface PemilikKostSidebarProps {
   activeTab?: DashboardTab;
@@ -29,11 +30,17 @@ interface PemilikKostSidebarProps {
 
 export function PemilikKostSidebar({
   onTabChange,
-  pendingInvoicesCount = 3,
+  pendingInvoicesCount,
   onLogout,
 }: PemilikKostSidebarProps) {
   const pathname = usePathname();
+  const { invoices, rooms } = useDashboard();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const activePendingCount =
+    pendingInvoicesCount !== undefined
+      ? pendingInvoicesCount
+      : invoices.filter((i) => i.status !== "lunas").length;
 
   const mainMenuItems = [
     {
@@ -59,7 +66,7 @@ export function PemilikKostSidebar({
       label: "Tagihan & pembayaran",
       href: "/dashboard/tagihan",
       icon: Receipt,
-      badge: pendingInvoicesCount > 0 ? pendingInvoicesCount : null,
+      badge: activePendingCount > 0 ? activePendingCount : null,
     },
     {
       id: "keuangan" as DashboardTab,
@@ -91,7 +98,7 @@ export function PemilikKostSidebar({
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-[#E6E3DC] flex flex-col justify-between shrink-0 min-h-screen select-none">
+    <aside className="w-64 bg-white border-r border-[#E6E3DC] flex flex-col justify-between shrink-0 h-full overflow-y-auto select-none">
       {/* Top Branding & Main Navigation */}
       <div className="p-4 flex flex-col gap-6">
         {/* Brand Logo */}
@@ -219,11 +226,13 @@ export function PemilikKostSidebar({
           </div>
 
           <div className="space-y-1">
-            <div className="text-[11px] text-[#5C5952]">32 dari 75 kamar digunakan</div>
+            <div className="text-[11px] text-[#5C5952]">
+              {rooms.length} dari 75 kamar digunakan
+            </div>
             <div className="w-full h-1.5 rounded-full bg-[#E6E3DC] overflow-hidden">
               <div
                 className="h-full bg-[#6F4E37] rounded-full transition-all duration-500"
-                style={{ width: `${(32 / 75) * 100}%` }}
+                style={{ width: `${Math.min(100, (rooms.length / 75) * 100)}%` }}
               />
             </div>
           </div>

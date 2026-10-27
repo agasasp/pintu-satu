@@ -19,10 +19,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#F9F8F6] text-[#1C1B18] font-sans antialiased flex selection:bg-[#6F4E37]/15 selection:text-[#1C1B18]">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block shrink-0">
+      {/* Desktop Sidebar (Sticky, non-scrolling) */}
+      <div className="hidden lg:block shrink-0 sticky top-0 h-screen z-30">
         <PemilikKostSidebar
-          pendingInvoicesCount={3}
           onLogout={handleLogout}
         />
       </div>
@@ -45,7 +44,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </button>
             <PemilikKostSidebar
               onTabChange={() => setIsMobileMenuOpen(false)}
-              pendingInvoicesCount={3}
               onLogout={handleLogout}
             />
           </div>

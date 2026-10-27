@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   ChevronDown,
@@ -31,10 +32,49 @@ export function PemilikKostTopNav({
   onPropertyChange,
   onLogout,
 }: PemilikKostTopNavProps) {
-  const { logout } = useDashboard();
+  const router = useRouter();
+  const { logout, showToast, properties, addNewProperty } = useDashboard();
   const [showPropertyDropdown, setShowPropertyDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [isAddPropertyModalOpen, setIsAddPropertyModalOpen] = useState(false);
+  const [newPropForm, setNewPropForm] = useState({
+    name: "",
+    location: "",
+    rooms: 20,
+  });
+
+  const initialNotifications = [
+    {
+      id: "N1",
+      title: "Tagihan A-05 Terlambat",
+      desc: "Andi Saputra belum melunasi sewa Rp1.500.000 (jatuh tempo 20 Okt).",
+      time: "2 jam lalu",
+      icon: AlertCircle,
+      color: "text-red-600 bg-red-50",
+      target: "/dashboard/tagihan",
+    },
+    {
+      id: "N2",
+      title: "Kontrak Segera Berakhir",
+      desc: "Kontrak Nadia Salsabila & Yoga Pratama berakhir pada 31 Oktober 2026.",
+      time: "5 jam lalu",
+      icon: Clock,
+      color: "text-amber-600 bg-amber-50",
+      target: "/dashboard/penghuni",
+    },
+    {
+      id: "N3",
+      title: "Pembayaran Diterima",
+      desc: "Sewa kamar A-01 (Putri Aprilia) Rp1.500.000 berhasil diverifikasi.",
+      time: "09:12 WIB",
+      icon: Check,
+      color: "text-emerald-600 bg-emerald-50",
+      target: "/dashboard/keuangan",
+    },
+  ];
+
+  const [notificationList, setNotificationList] = useState(initialNotifications);
 
   const handleLogout = () => {
     setShowUserDropdown(false);
@@ -45,37 +85,31 @@ export function PemilikKostTopNav({
     }
   };
 
-  const propertyOptions = [
-    { name: "Kost Cemara", location: "Sukajadi, Bandung", rooms: 32 },
-    { name: "Griya Dago Suites", location: "Coblong, Bandung", rooms: 18 },
-  ];
+  const handleNotificationClick = (item: typeof initialNotifications[0]) => {
+    setShowNotifications(false);
+    setNotificationList((prev) => prev.filter((n) => n.id !== item.id));
+    router.push(item.target);
+  };
 
-  const notifications = [
-    {
-      id: "N1",
-      title: "Tagihan A-05 Terlambat",
-      desc: "Andi Saputra belum melunasi sewa Rp1.500.000 (jatuh tempo 20 Okt).",
-      time: "2 jam lalu",
-      icon: AlertCircle,
-      color: "text-red-600 bg-red-50",
-    },
-    {
-      id: "N2",
-      title: "Kontrak Segera Berakhir",
-      desc: "Kontrak Nadia Salsabila & Yoga Pratama berakhir pada 31 Oktober 2026.",
-      time: "5 jam lalu",
-      icon: Clock,
-      color: "text-amber-600 bg-amber-50",
-    },
-    {
-      id: "N3",
-      title: "Pembayaran Diterima",
-      desc: "Sewa kamar A-01 (Putri Aprilia) Rp1.500.000 berhasil diverifikasi.",
-      time: "09:12 WIB",
-      icon: Check,
-      color: "text-emerald-600 bg-emerald-50",
-    },
-  ];
+  const handleMarkAllNotificationsRead = () => {
+    setNotificationList([]);
+    setShowNotifications(false);
+    showToast("Notifikasi", "Semua notifikasi telah ditandai sudah dibaca.");
+  };
+
+  const handleCreatePropertySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPropForm.name.trim() || !newPropForm.location.trim()) return;
+
+    addNewProperty(
+      newPropForm.name.trim(),
+      newPropForm.location.trim(),
+      newPropForm.rooms || 10
+    );
+    onPropertyChange(newPropForm.name.trim(), newPropForm.location.trim());
+    setIsAddPropertyModalOpen(false);
+    setNewPropForm({ name: "", location: "", rooms: 20 });
+  };
 
   return (
     <header className="h-16 bg-white border-b border-[#E6E3DC] px-6 flex items-center justify-between sticky top-0 z-30 select-none">
@@ -107,7 +141,7 @@ export function PemilikKostTopNav({
               Pilih Properti Kost
             </div>
 
-            {propertyOptions.map((prop) => {
+            {properties.map((prop) => {
               const isSelected = prop.name === currentProperty;
               return (
                 <button
@@ -138,6 +172,7 @@ export function PemilikKostTopNav({
             <button
               onClick={() => {
                 setShowPropertyDropdown(false);
+                setIsAddPropertyModalOpen(true);
               }}
               className="w-full flex items-center gap-2 px-3 py-2 text-[#6F4E37] font-semibold hover:bg-[#F9F8F6] text-left cursor-pointer"
             >
@@ -164,57 +199,75 @@ export function PemilikKostTopNav({
           >
             <Bell className="w-4 h-4" />
             {/* Notification Dot */}
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
+            {notificationList.length > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
+            )}
           </button>
 
           {/* Notifications Popover */}
           {showNotifications && (
             <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-[#E6E3DC] shadow-xl p-3 z-50 text-xs">
               <div className="flex items-center justify-between pb-2 border-b border-[#E6E3DC]">
-                <span className="font-bold text-sm text-[#1C1B18]">Notifikasi</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm text-[#1C1B18]">Notifikasi</span>
+                  {notificationList.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#6F4E37] text-white">
+                      {notificationList.length}
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="p-1 text-[#8C887F] hover:text-[#1C1B18]"
+                  className="p-1 text-[#8C887F] hover:text-[#1C1B18] cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
               <div className="py-2 space-y-2 max-h-72 overflow-y-auto">
-                {notifications.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.id}
-                      className="p-2.5 rounded-xl bg-[#F9F8F6] hover:bg-[#F4EFEA] transition-colors flex items-start gap-3 cursor-pointer"
-                    >
-                      <div className={`p-1.5 rounded-lg shrink-0 ${item.color}`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-[#1C1B18] text-xs">
-                            {item.title}
-                          </span>
-                          <span className="text-[10px] text-[#8C887F]">{item.time}</span>
+                {notificationList.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-[#8C887F]">
+                    Tidak ada notifikasi baru
+                  </div>
+                ) : (
+                  notificationList.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => handleNotificationClick(item)}
+                        className="p-2.5 rounded-xl bg-[#F9F8F6] hover:bg-[#F4EFEA] transition-colors flex items-start gap-3 cursor-pointer"
+                      >
+                        <div className={`p-1.5 rounded-lg shrink-0 ${item.color}`}>
+                          <Icon className="w-4 h-4" />
                         </div>
-                        <p className="text-[11px] text-[#5C5952] mt-0.5 leading-snug">
-                          {item.desc}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[#1C1B18] text-xs">
+                              {item.title}
+                            </span>
+                            <span className="text-[10px] text-[#8C887F]">{item.time}</span>
+                          </div>
+                          <p className="text-[11px] text-[#5C5952] mt-0.5 leading-snug">
+                            {item.desc}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
 
-              <div className="pt-2 border-t border-[#E6E3DC] text-center">
-                <button
-                  onClick={() => setShowNotifications(false)}
-                  className="text-[11px] font-semibold text-[#6F4E37] hover:underline"
-                >
-                  Tandai semua sudah dibaca
-                </button>
-              </div>
+              {notificationList.length > 0 && (
+                <div className="pt-2 border-t border-[#E6E3DC] text-center">
+                  <button
+                    onClick={handleMarkAllNotificationsRead}
+                    className="text-[11px] font-semibold text-[#6F4E37] hover:underline cursor-pointer"
+                  >
+                    Tandai semua sudah dibaca
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -287,6 +340,91 @@ export function PemilikKostTopNav({
           )}
         </div>
       </div>
+
+      {/* Modal: Tambah Properti Baru */}
+      {isAddPropertyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in-up">
+          <div className="bg-white rounded-2xl border border-[#E6E3DC] shadow-2xl max-w-md w-full p-6 space-y-4 text-xs text-[#1C1B18]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E3DC]">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#6F4E37]" />
+                <h3 className="font-extrabold text-sm text-[#1C1B18]">
+                  Tambah Cabang Kost Baru
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsAddPropertyModalOpen(false)}
+                className="p-1 rounded-lg text-[#8C887F] hover:text-[#1C1B18] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePropertySubmit} className="space-y-3.5">
+              <div>
+                <label className="block font-semibold mb-1">Nama Properti Kost</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Kost Dago Asri"
+                  value={newPropForm.name}
+                  onChange={(e) =>
+                    setNewPropForm({ ...newPropForm, name: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[#F9F8F6] rounded-xl border border-[#E6E3DC] focus:bg-white focus:outline-none focus:border-[#6F4E37]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Lokasi / Kecamatan</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Coblong, Bandung"
+                  value={newPropForm.location}
+                  onChange={(e) =>
+                    setNewPropForm({ ...newPropForm, location: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[#F9F8F6] rounded-xl border border-[#E6E3DC] focus:bg-white focus:outline-none focus:border-[#6F4E37]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Jumlah Kamar</label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={newPropForm.rooms}
+                  onChange={(e) =>
+                    setNewPropForm({
+                      ...newPropForm,
+                      rooms: parseInt(e.target.value) || 1,
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-[#F9F8F6] rounded-xl border border-[#E6E3DC] font-mono focus:bg-white focus:outline-none focus:border-[#6F4E37]"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddPropertyModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-[#E6E3DC] font-semibold text-[#5C5952] hover:bg-[#F9F8F6] cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#6F4E37] hover:bg-[#563B28] text-white font-semibold cursor-pointer shadow-xs"
+                >
+                  Simpan Properti
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

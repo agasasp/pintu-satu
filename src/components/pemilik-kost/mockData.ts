@@ -7,6 +7,10 @@ import {
   PriorityTask,
   ActivityItem,
   PropertyProfile,
+  InvoiceItem,
+  TeamMember,
+  DocumentItem,
+  PropertyItem,
 } from "./types";
 
 export const initialRooms: RoomItem[] = [
@@ -431,3 +435,139 @@ export const initialPropertyProfile: PropertyProfile = {
   lateFee: "Tidak diterapkan",
   autoWaReminder: true,
 };
+
+export const initialInvoices: InvoiceItem[] = [
+  {
+    id: "INV-2026-001",
+    room: "A-05",
+    tenant: "Andi Saputra",
+    phone: "0821-4567-8901",
+    amount: "Rp1.500.000",
+    amountNumber: 1500000,
+    dueDate: "20 Okt 2026",
+    status: "terlambat",
+    statusLabel: "Terlambat",
+  },
+  {
+    id: "INV-2026-002",
+    room: "A-03",
+    tenant: "Dewi Lestari",
+    phone: "0857-1122-3344",
+    amount: "Rp1.500.000",
+    amountNumber: 1500000,
+    dueDate: "28 Okt 2026",
+    status: "menunggu",
+    statusLabel: "Belum dibayar",
+  },
+  {
+    id: "INV-2026-003",
+    room: "A-04",
+    tenant: "Fajar Ramadhan",
+    phone: "0812-8899-0011",
+    amount: "Rp1.500.000",
+    amountNumber: 1500000,
+    dueDate: "28 Okt 2026",
+    status: "menunggu",
+    statusLabel: "Belum dibayar",
+  },
+  {
+    id: "INV-2026-004",
+    room: "A-01",
+    tenant: "Putri Aprilia",
+    phone: "0812-3456-7890",
+    amount: "Rp1.500.000",
+    amountNumber: 1500000,
+    dueDate: "25 Okt 2026",
+    status: "lunas",
+    statusLabel: "Lunas",
+    paidAt: "26 Okt 2026, 09.12 WIB via BCA",
+    paymentMethod: "Transfer Bank BCA",
+  },
+  {
+    id: "INV-2026-005",
+    room: "A-02",
+    tenant: "Rizky Maulana",
+    phone: "0813-2234-5678",
+    amount: "Rp1.500.000",
+    amountNumber: 1500000,
+    dueDate: "25 Okt 2026",
+    status: "lunas",
+    statusLabel: "Lunas",
+    paidAt: "25 Okt 2026, 14.20 WIB via QRIS",
+    paymentMethod: "QRIS Pintu Satu",
+  },
+  {
+    id: "INV-2026-006",
+    room: "B-01",
+    tenant: "Nadia Salsabila",
+    phone: "0813-9090-1212",
+    amount: "Rp1.750.000",
+    amountNumber: 1750000,
+    dueDate: "25 Okt 2026",
+    status: "lunas",
+    statusLabel: "Lunas",
+    paidAt: "24 Okt 2026, 18.00 WIB via BCA",
+    paymentMethod: "Transfer Bank BCA",
+  },
+];
+
+export const initialTeamMembers: TeamMember[] = [
+  {
+    id: "TM-1",
+    name: "Sari Wulandari",
+    role: "Pengelola Properti (Admin Operasional)",
+    phone: "0812-3344-5566",
+    email: "sari.ops@kostcemara.id",
+    access: "Penuh (Kamar, Penghuni, Tagihan, Kas Lapangan)",
+    initials: "SW",
+  },
+  {
+    id: "TM-2",
+    name: "Pak Dedi",
+    role: "Teknisi & Maintenance",
+    phone: "0856-7788-9911",
+    email: "dedi.maintenance@kostcemara.id",
+    access: "Terbatas (Tiket Perbaikan & Servis AC)",
+    initials: "PD",
+  },
+];
+
+export const initialDocuments: DocumentItem[] = [
+  {
+    id: "DOC-1",
+    name: "Sertifikat Hak Milik (SHM) No. 4419",
+    category: "Legalitas Tanah & Properti",
+    date: "14 Jan 2024",
+    size: "4.2 MB",
+    type: "PDF",
+  },
+  {
+    id: "DOC-2",
+    name: "Izin Mendirikan Bangunan (IMB/PBG) Kost",
+    category: "Perizinan Bangunan",
+    date: "02 Feb 2024",
+    size: "2.8 MB",
+    type: "PDF",
+  },
+  {
+    id: "DOC-3",
+    name: "Polis Asuransi Properti All-Risk 2026",
+    category: "Asuransi & Perlindungan",
+    date: "01 Jan 2026",
+    size: "1.9 MB",
+    type: "PDF",
+  },
+  {
+    id: "DOC-4",
+    name: "Template Perjanjian Sewa Kost Cemara (Standar)",
+    category: "Draft & Dokumen Kontrak",
+    date: "10 Okt 2026",
+    size: "540 KB",
+    type: "PDF",
+  },
+];
+
+export const initialProperties: PropertyItem[] = [
+  { name: "Kost Cemara", location: "Sukajadi, Bandung", rooms: 32 },
+  { name: "Griya Dago Suites", location: "Coblong, Bandung", rooms: 18 },
+];

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { initialRooms } from "./mockData";
 import { RoomItem, DashboardTab } from "./types";
+import { useDashboard } from "./DashboardContext";
 
 interface ViewManajemenKamarProps {
   onNavigateTab: (tab: DashboardTab) => void;
@@ -30,7 +31,7 @@ export function ViewManajemenKamar({
   onNavigateTab,
   onOpenAddRoom,
 }: ViewManajemenKamarProps) {
-  const [rooms] = useState<RoomItem[]>(initialRooms);
+  const { rooms, updateRoom, openAddTenant, showToast } = useDashboard();
   const [activeFilterTab, setActiveFilterTab] = useState<
     "semua" | "terisi" | "kosong" | "perawatan"
   >("semua");
@@ -38,15 +39,27 @@ export function ViewManajemenKamar({
   const [floorFilter, setFloorFilter] = useState<"all" | "1" | "2">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "Standard" | "Deluxe">("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 9;
 
   // Selected room for side drawer detail (default to A-01 to match screenshot)
-  const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(rooms[0]);
+  const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(rooms[0] || null);
 
-  // Counts
-  const totalCount = 32;
-  const occupiedCount = 28;
-  const emptyCount = 3;
-  const maintenanceCount = 1;
+  // Modals state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editPrice, setEditPrice] = useState(1500000);
+  const [editStatus, setEditStatus] = useState<"terisi" | "kosong" | "perawatan">("terisi");
+  const [editNote, setEditNote] = useState("");
+
+  const [isTipeKamarModalOpen, setIsTipeKamarModalOpen] = useState(false);
+  const [standardPrice, setStandardPrice] = useState(1500000);
+  const [deluxePrice, setDeluxePrice] = useState(1750000);
+
+  // Dynamic counts from shared rooms state
+  const totalCount = rooms.length;
+  const occupiedCount = rooms.filter((r) => r.status === "terisi").length;
+  const emptyCount = rooms.filter((r) => r.status === "kosong").length;
+  const maintenanceCount = rooms.filter((r) => r.status === "perawatan").length;
 
   // Filtered rooms
   const filteredRooms = rooms.filter((room) => {
@@ -62,6 +75,12 @@ export function ViewManajemenKamar({
     return true;
   });
 
+  const totalPages = Math.ceil(filteredRooms.length / pageSize) || 1;
+  const paginatedRooms = filteredRooms.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="space-y-6 pb-12">
       {/* 1. Header & Actions */}
@@ -76,7 +95,10 @@ export function ViewManajemenKamar({
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] transition-colors cursor-pointer shadow-2xs">
+          <button
+            onClick={() => setIsTipeKamarModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] transition-colors cursor-pointer shadow-2xs"
+          >
             <SlidersHorizontal className="w-3.5 h-3.5 text-[#6F4E37]" />
             <span>Atur tipe kamar</span>
           </button>
@@ -91,10 +113,18 @@ export function ViewManajemenKamar({
         </div>
       </div>
 
-      {/* 2. Top 4 Stat Cards */}
+      {/* 2. Top 4 Stat Cards (Clickable Filter) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1 */}
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => setActiveFilterTab("semua")}
+          className={`p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.01] ${
+            activeFilterTab === "semua"
+              ? "bg-[#F4EFEA]/50 border-[#6F4E37] ring-1 ring-[#6F4E37]"
+              : "bg-white border-[#E6E3DC] hover:border-[#6F4E37]/50"
+          }`}
+          title="Klik untuk filter semua kamar"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Total kamar</span>
             <DoorClosed className="w-4 h-4 text-[#6F4E37]" />
@@ -106,7 +136,15 @@ export function ViewManajemenKamar({
         </div>
 
         {/* Card 2 */}
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => setActiveFilterTab("terisi")}
+          className={`p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.01] ${
+            activeFilterTab === "terisi"
+              ? "bg-[#F4EFEA]/50 border-[#6F4E37] ring-1 ring-[#6F4E37]"
+              : "bg-white border-[#E6E3DC] hover:border-[#6F4E37]/50"
+          }`}
+          title="Klik untuk filter kamar terisi"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Terisi</span>
             <Users className="w-4 h-4 text-[#6F4E37]" />
@@ -120,7 +158,15 @@ export function ViewManajemenKamar({
         </div>
 
         {/* Card 3 */}
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => setActiveFilterTab("kosong")}
+          className={`p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.01] ${
+            activeFilterTab === "kosong"
+              ? "bg-[#F4EFEA]/50 border-[#6F4E37] ring-1 ring-[#6F4E37]"
+              : "bg-white border-[#E6E3DC] hover:border-[#6F4E37]/50"
+          }`}
+          title="Klik untuk filter kamar kosong"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Kosong</span>
             <Key className="w-4 h-4 text-[#C88A58]" />
@@ -132,7 +178,15 @@ export function ViewManajemenKamar({
         </div>
 
         {/* Card 4 */}
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => setActiveFilterTab("perawatan")}
+          className={`p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.01] ${
+            activeFilterTab === "perawatan"
+              ? "bg-[#F4EFEA]/50 border-[#6F4E37] ring-1 ring-[#6F4E37]"
+              : "bg-white border-[#E6E3DC] hover:border-[#6F4E37]/50"
+          }`}
+          title="Klik untuk filter kamar dalam perawatan"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Dalam perawatan</span>
             <Wrench className="w-4 h-4 text-[#C88A58]" />
@@ -291,7 +345,7 @@ export function ViewManajemenKamar({
         >
           {viewMode === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {filteredRooms.map((room) => {
+              {paginatedRooms.map((room) => {
                 const isSelected = selectedRoom?.id === room.id;
 
                 return (
@@ -388,7 +442,7 @@ export function ViewManajemenKamar({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E6E3DC]">
-                  {filteredRooms.map((room) => (
+                  {paginatedRooms.map((room) => (
                     <tr
                       key={room.id}
                       onClick={() => setSelectedRoom(room)}
@@ -434,17 +488,32 @@ export function ViewManajemenKamar({
 
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 text-xs text-[#5C5952]">
-            <span>Menampilkan 1-9 dari 32 kamar</span>
+            <span>
+              Menampilkan {filteredRooms.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} -{" "}
+              {Math.min(currentPage * pageSize, filteredRooms.length)} dari {filteredRooms.length} kamar
+            </span>
             <div className="flex items-center gap-2">
-              <button className="px-3 py-1.5 rounded-xl border border-[#E6E3DC] bg-white text-xs text-[#5C5952] hover:bg-[#F9F8F6] cursor-pointer">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="px-3 py-1.5 rounded-xl border border-[#E6E3DC] bg-white text-xs text-[#5C5952] hover:bg-[#F9F8F6] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+              >
                 Sebelumnya
               </button>
-              <button className="px-3 py-1.5 rounded-xl border border-[#E6E3DC] bg-white text-xs text-[#5C5952] hover:bg-[#F9F8F6] cursor-pointer">
+              <span className="font-semibold text-xs text-[#1C1B18] px-1">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="px-3 py-1.5 rounded-xl border border-[#E6E3DC] bg-white text-xs text-[#5C5952] hover:bg-[#F9F8F6] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+              >
                 Berikutnya
               </button>
             </div>
           </div>
         </div>
+
 
         {/* Right: Detail Kamar Side Drawer (4 cols) */}
         {selectedRoom && (
@@ -585,7 +654,17 @@ export function ViewManajemenKamar({
 
             {/* Bottom Actions */}
             <div className="pt-2 flex items-center gap-2">
-              <button className="flex-1 py-2 px-3 rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] transition-colors cursor-pointer text-center">
+              <button
+                onClick={() => {
+                  if (selectedRoom) {
+                    setEditPrice(selectedRoom.priceMonthly);
+                    setEditStatus(selectedRoom.status);
+                    setEditNote(selectedRoom.maintenanceNote || "");
+                    setIsEditModalOpen(true);
+                  }
+                }}
+                className="flex-1 py-2 px-3 rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] transition-colors cursor-pointer text-center"
+              >
                 Edit kamar
               </button>
 
@@ -598,7 +677,7 @@ export function ViewManajemenKamar({
                 </button>
               ) : (
                 <button
-                  onClick={() => onNavigateTab("penghuni")}
+                  onClick={() => openAddTenant(selectedRoom.roomNumber)}
                   className="flex-1 py-2 px-3 rounded-xl bg-[#6F4E37] hover:bg-[#563B28] text-white text-xs font-semibold transition-colors cursor-pointer text-center"
                 >
                   Daftarkan penghuni
@@ -608,6 +687,182 @@ export function ViewManajemenKamar({
           </div>
         )}
       </div>
+
+      {/* Edit Kamar Modal */}
+      {isEditModalOpen && selectedRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E6E3DC] shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E3DC]">
+              <h3 className="font-bold text-base text-[#1C1B18]">
+                Edit Kamar {selectedRoom.roomNumber}
+              </h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1 rounded-lg text-[#8C887F] hover:text-[#1C1B18]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-[#1C1B18] mb-1">
+                  Harga Sewa Bulanan (Rp)
+                </label>
+                <input
+                  type="number"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 rounded-xl border border-[#E6E3DC] focus:outline-none focus:border-[#6F4E37]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#1C1B18] mb-1">
+                  Status Kamar
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as "terisi" | "kosong" | "perawatan")}
+                  className="w-full px-3 py-2 rounded-xl border border-[#E6E3DC] focus:outline-none focus:border-[#6F4E37] cursor-pointer"
+                >
+                  <option value="terisi">Terisi</option>
+                  <option value="kosong">Kosong (Siap Huni)</option>
+                  <option value="perawatan">Dalam Perawatan</option>
+                </select>
+              </div>
+
+              {editStatus === "perawatan" && (
+                <div>
+                  <label className="block font-semibold text-[#1C1B18] mb-1">
+                    Catatan Perawatan
+                  </label>
+                  <input
+                    type="text"
+                    value={editNote}
+                    onChange={(e) => setEditNote(e.target.value)}
+                    placeholder="Contoh: Servis AC & Pengecatan ulang"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E6E3DC] focus:outline-none focus:border-[#6F4E37]"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  updateRoom(selectedRoom.id, {
+                    priceMonthly: editPrice,
+                    status: editStatus,
+                    maintenanceNote: editNote || selectedRoom.maintenanceNote,
+                  });
+                  setSelectedRoom((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          priceMonthly: editPrice,
+                          status: editStatus,
+                          maintenanceNote: editNote || prev.maintenanceNote,
+                        }
+                      : null
+                  );
+                  setIsEditModalOpen(false);
+                }}
+                className="px-4 py-2 rounded-xl bg-[#6F4E37] text-white text-xs font-semibold hover:bg-[#563B28] cursor-pointer"
+              >
+                Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Atur Tipe Kamar Modal */}
+      {isTipeKamarModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E6E3DC] shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E3DC]">
+              <h3 className="font-bold text-base text-[#1C1B18]">
+                Pengaturan Tipe &amp; Tarif Kamar
+              </h3>
+              <button
+                onClick={() => setIsTipeKamarModalOpen(false)}
+                className="p-1 rounded-lg text-[#8C887F] hover:text-[#1C1B18]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div className="p-3 rounded-xl bg-[#F9F8F6] border border-[#E6E3DC] space-y-2">
+                <span className="font-bold text-sm text-[#1C1B18]">Tipe Standard (12 m²)</span>
+                <p className="text-[11px] text-[#5C5952]">Kasur single, lemari, meja belajar, KM dalam, Wi-Fi</p>
+                <div>
+                  <label className="block font-semibold text-[#1C1B18] mb-1">
+                    Tarif Bulanan (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={standardPrice}
+                    onChange={(e) => setStandardPrice(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-white rounded-xl border border-[#E6E3DC] focus:outline-none focus:border-[#6F4E37]"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#F9F8F6] border border-[#E6E3DC] space-y-2">
+                <span className="font-bold text-sm text-[#1C1B18]">Tipe Deluxe (16 m²)</span>
+                <p className="text-[11px] text-[#5C5952]">Kasur queen, AC 1/2 PK, lemari 2 pintu, KM dalam water heater, Wi-Fi</p>
+                <div>
+                  <label className="block font-semibold text-[#1C1B18] mb-1">
+                    Tarif Bulanan (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={deluxePrice}
+                    onChange={(e) => setDeluxePrice(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-white rounded-xl border border-[#E6E3DC] focus:outline-none focus:border-[#6F4E37]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setIsTipeKamarModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  rooms.forEach((r) => {
+                    if (r.type === "Standard" && r.priceMonthly !== standardPrice) {
+                      updateRoom(r.id, { priceMonthly: standardPrice });
+                    } else if (r.type === "Deluxe" && r.priceMonthly !== deluxePrice) {
+                      updateRoom(r.id, { priceMonthly: deluxePrice });
+                    }
+                  });
+                  setIsTipeKamarModalOpen(false);
+                  showToast(
+                    "Tarif Kamar Disimpan",
+                    `Tarif Standard: Rp${standardPrice.toLocaleString("id-ID")}, Deluxe: Rp${deluxePrice.toLocaleString("id-ID")} berhasil diperbarui.`
+                  );
+                }}
+                className="px-4 py-2 rounded-xl bg-[#6F4E37] text-white text-xs font-semibold hover:bg-[#563B28] cursor-pointer"
+              >
+                Simpan Tarif
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

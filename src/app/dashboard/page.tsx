@@ -21,6 +21,8 @@ function DashboardMainContent() {
     openRecordExpense,
     openAddRoom,
     openAddTenant,
+    sendWhatsappReminder,
+    extendTenantContract,
     showToast,
   } = useDashboard();
 
@@ -38,10 +40,7 @@ function DashboardMainContent() {
     room: string,
     amount: string
   ) => {
-    showToast(
-      "WhatsApp Invoice Terkirim",
-      `Invoice sewa ${amount} untuk Kamar ${room} telah dikirim ke nomor WhatsApp ${tenantName}.`
-    );
+    sendWhatsappReminder(tenantName, room, "0812-4567-8901", amount);
   };
 
   // If query parameter ?tab= is provided, render that view; otherwise default to Ringkasan
@@ -65,10 +64,7 @@ function DashboardMainContent() {
           );
         }}
         onExtendContract={(tenant) => {
-          showToast(
-            "Perpanjangan Kontrak",
-            `Draft adendum perpanjangan sewa untuk ${tenant.name} telah dikirim ke WhatsApp.`
-          );
+          extendTenantContract(tenant.id);
         }}
       />
     );
@@ -78,11 +74,8 @@ function DashboardMainContent() {
     return (
       <ViewTagihanPembayaran
         onOpenRecordPayment={openRecordPayment}
-        onSendWhatsappInvoice={(name, room, _phone, amount) => {
-          showToast(
-            "WhatsApp Invoice Terkirim",
-            `Tagihan sewa ${amount} untuk ${name} (Kamar ${room}) telah terkirim.`
-          );
+        onSendWhatsappInvoice={(name, room, phone, amount) => {
+          sendWhatsappReminder(name, room, phone, amount);
         }}
       />
     );

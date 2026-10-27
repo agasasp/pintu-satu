@@ -135,3 +135,43 @@ export interface PropertyProfile {
   lateFee: string;
   autoWaReminder: boolean;
 }
+
+export interface InvoiceItem {
+  id: string;
+  room: string;
+  tenant: string;
+  phone: string;
+  amount: string;
+  amountNumber: number;
+  dueDate: string;
+  status: "lunas" | "menunggu" | "terlambat";
+  statusLabel: string;
+  paidAt?: string;
+  paymentMethod?: string;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  email: string;
+  access: string;
+  initials: string;
+}
+
+export interface DocumentItem {
+  id: string;
+  name: string;
+  category: string;
+  date: string;
+  size: string;
+  type: string;
+}
+
+export interface PropertyItem {
+  name: string;
+  location: string;
+  rooms: number;
+}
+

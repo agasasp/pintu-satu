@@ -5,7 +5,7 @@ import { ViewDataPenghuni } from "@/components/pemilik-kost/ViewDataPenghuni";
 import { useDashboard } from "@/components/pemilik-kost/DashboardContext";
 
 export default function PenghuniPage() {
-  const { openAddTenant, showToast } = useDashboard();
+  const { openAddTenant, extendTenantContract, showToast } = useDashboard();
 
   useEffect(() => {
     document.title = "Data Penghuni • Kost Cemara | Pintu Satu";
@@ -21,10 +21,7 @@ export default function PenghuniPage() {
         );
       }}
       onExtendContract={(tenant) => {
-        showToast(
-          "Perpanjangan Kontrak",
-          `Draft adendum perpanjangan sewa untuk ${tenant.name} telah dikirim ke WhatsApp.`
-        );
+        extendTenantContract(tenant.id);
       }}
     />
   );
