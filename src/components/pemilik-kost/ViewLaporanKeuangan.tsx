@@ -18,24 +18,91 @@ import {
   expenseBreakdown,
 } from "./mockData";
 import { FinancialTransaction } from "./types";
+import { useDashboard } from "./DashboardContext";
 
 interface ViewLaporanKeuanganProps {
-  onOpenRecordExpense: () => void;
-  onDownloadReport: () => void;
+  onOpenRecordExpense?: () => void;
+  onDownloadReport?: () => void;
 }
 
 export function ViewLaporanKeuangan({
   onOpenRecordExpense,
   onDownloadReport,
 }: ViewLaporanKeuanganProps) {
-  const selectedPeriod = "Oktober 2026";
-  const [transactions] =
-    useState<FinancialTransaction[]>(initialTransactions);
+  const {
+    transactions,
+    invoices,
+    openRecordExpense: contextOpenRecordExpense,
+    showToast,
+  } = useDashboard();
+
+  const [selectedPeriod, setSelectedPeriod] = useState("Oktober 2026");
+  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
   const [transactionTypeFilter, setTransactionTypeFilter] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [hoveredTrend, setHoveredTrend] = useState<number | null>(null);
+
+  const periods = [
+    "Oktober 2026",
+    "September 2026",
+    "Agustus 2026",
+    "Juli 2026",
+  ];
+
+  // Dynamic calculations
+  const totalPemasukan = transactions
+    .filter((t) => t.type === "pemasukan")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalPengeluaran = transactions
+    .filter((t) => t.type === "pengeluaran")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const netCashFlow = totalPemasukan - totalPengeluaran;
+  const marginKas =
+    totalPemasukan > 0
+      ? ((netCashFlow / totalPemasukan) * 100).toFixed(1).replace(".", ",")
+      : "0,0";
+
+  const pendingAmount = invoices
+    .filter((i) => i.status !== "lunas")
+    .reduce((sum, i) => sum + (i.amountNumber || 0), 0);
+
+  const handleExportCSV = () => {
+    const headers = ["ID", "Tanggal", "Keterangan", "Kategori", "Jenis", "Nominal"];
+    const rows = filteredTransactions.map((tx) => [
+      tx.id,
+      `"${tx.date}"`,
+      `"${tx.title.replace(/"/g, '""')}"`,
+      `"${tx.category.replace(/"/g, '""')}"`,
+      tx.type,
+      tx.amount,
+    ]);
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `laporan_keuangan_${selectedPeriod.toLowerCase().replace(/\s+/g, "_")}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(
+      "Laporan Berhasil Diunduh",
+      `File CSV laporan keuangan untuk periode ${selectedPeriod} berhasil disimpan.`
+    );
+    if (onDownloadReport) onDownloadReport();
+  };
 
   const filteredTransactions = transactions.filter((t) => {
     if (transactionTypeFilter !== "all" && t.type !== transactionTypeFilter)
+      return false;
+    if (selectedCategory && t.category !== selectedCategory)
       return false;
     return true;
   });
@@ -55,15 +122,15 @@ export function ViewLaporanKeuangan({
 
         <div className="flex items-center gap-3">
           <button
-            onClick={onDownloadReport}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] transition-colors cursor-pointer shadow-2xs"
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] transition-colors cursor-pointer shadow-2xs active:scale-[0.98]"
           >
             <Download className="w-3.5 h-3.5 text-[#6F4E37]" />
-            <span>Unduh laporan</span>
+            <span>Unduh laporan (CSV)</span>
           </button>
 
           <button
-            onClick={onOpenRecordExpense}
+            onClick={() => (onOpenRecordExpense ? onOpenRecordExpense() : contextOpenRecordExpense())}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#6F4E37] hover:bg-[#563B28] text-white text-xs font-semibold transition-all shadow-xs cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
@@ -76,12 +143,37 @@ export function ViewLaporanKeuangan({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#E6E3DC] text-xs font-bold text-[#1C1B18] hover:bg-[#F9F8F6] cursor-pointer shadow-2xs">
+            <button
+              onClick={() => setIsPeriodOpen(!isPeriodOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#E6E3DC] text-xs font-bold text-[#1C1B18] hover:bg-[#F9F8F6] cursor-pointer shadow-2xs"
+            >
               <span>{selectedPeriod}</span>
               <ChevronDown className="w-3.5 h-3.5 text-[#8C887F]" />
             </button>
+
+            {isPeriodOpen && (
+              <div className="absolute top-full left-0 mt-1.5 w-44 bg-white rounded-xl border border-[#E6E3DC] shadow-lg py-1.5 z-30">
+                {periods.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setSelectedPeriod(p);
+                      setIsPeriodOpen(false);
+                      showToast("Periode Berubah", `Menampilkan laporan kas periode ${p}`);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                      selectedPeriod === p
+                        ? "bg-[#F4EFEA] text-[#6F4E37]"
+                        : "text-[#1C1B18] hover:bg-[#F9F8F6]"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <span className="text-[#5C5952] font-medium">1–26 Oktober 2026</span>
+          <span className="text-[#5C5952] font-medium">1–26 {selectedPeriod}</span>
         </div>
 
         <div className="flex items-center gap-1.5 text-[11px] text-[#8C887F]">
@@ -93,13 +185,27 @@ export function ViewLaporanKeuangan({
       {/* 3. Top 4 Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Pemasukan */}
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => {
+            setTransactionTypeFilter(transactionTypeFilter === "pemasukan" ? "all" : "pemasukan");
+            setSelectedCategory(null);
+            showToast(
+              transactionTypeFilter === "pemasukan" ? "Filter Direset" : "Filter Pemasukan",
+              transactionTypeFilter === "pemasukan" ? "Menampilkan semua transaksi" : "Menampilkan transaksi pemasukan saja"
+            );
+          }}
+          className={`bg-white p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.02] active:scale-[0.98] ${
+            transactionTypeFilter === "pemasukan"
+              ? "border-[#6F4E37] ring-2 ring-[#6F4E37]/10"
+              : "border-[#E6E3DC] hover:border-[#6F4E37]/40"
+          }`}
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Total pemasukan</span>
             <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-extrabold text-[#1C1B18] tracking-tight">
-            Rp38.500.000
+            Rp{totalPemasukan.toLocaleString("id-ID")}
           </div>
           <div className="text-[11px] text-emerald-700 flex items-center gap-1 font-semibold">
             <span>&uarr; 5,5%</span>
@@ -108,13 +214,27 @@ export function ViewLaporanKeuangan({
         </div>
 
         {/* Card 2: Total Pengeluaran */}
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => {
+            setTransactionTypeFilter(transactionTypeFilter === "pengeluaran" ? "all" : "pengeluaran");
+            setSelectedCategory(null);
+            showToast(
+              transactionTypeFilter === "pengeluaran" ? "Filter Direset" : "Filter Pengeluaran",
+              transactionTypeFilter === "pengeluaran" ? "Menampilkan semua transaksi" : "Menampilkan transaksi pengeluaran saja"
+            );
+          }}
+          className={`bg-white p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.02] active:scale-[0.98] ${
+            transactionTypeFilter === "pengeluaran"
+              ? "border-[#6F4E37] ring-2 ring-[#6F4E37]/10"
+              : "border-[#E6E3DC] hover:border-[#6F4E37]/40"
+          }`}
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Total pengeluaran</span>
             <ArrowUpRight className="w-4 h-4 text-[#8C887F]" />
           </div>
           <div className="text-2xl font-extrabold text-[#1C1B18] tracking-tight">
-            Rp9.250.000
+            Rp{totalPengeluaran.toLocaleString("id-ID")}
           </div>
           <div className="text-[11px] text-[#5C5952] flex items-center gap-1">
             <span className="font-semibold text-[#1C1B18]">&uarr; 5,7%</span>
@@ -123,13 +243,20 @@ export function ViewLaporanKeuangan({
         </div>
 
         {/* Card 3: Arus Kas Bersih */}
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => {
+            setTransactionTypeFilter("all");
+            setSelectedCategory(null);
+            showToast("Arus Kas Bersih", `Arus kas bersih = Rp${totalPemasukan.toLocaleString("id-ID")} - Rp${totalPengeluaran.toLocaleString("id-ID")} = Rp${netCashFlow.toLocaleString("id-ID")}`);
+          }}
+          className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] hover:border-[#6F4E37]/40 shadow-2xs space-y-2 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Arus kas bersih</span>
             <Wallet className="w-4 h-4 text-[#6F4E37]" />
           </div>
           <div className="text-2xl font-extrabold text-[#1C1B18] tracking-tight">
-            Rp29.250.000
+            Rp{netCashFlow.toLocaleString("id-ID")}
           </div>
           <div className="text-[11px] text-emerald-700 flex items-center gap-1 font-semibold">
             <span>&uarr; Rp1.500.000</span>
@@ -138,13 +265,18 @@ export function ViewLaporanKeuangan({
         </div>
 
         {/* Card 4: Margin Kas Bersih */}
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => {
+            showToast(`Margin Kas Bersih ${marginKas}%`, "Rasio keuntungan operasional kas terhadap pemasukan sewa kost.");
+          }}
+          className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] hover:border-[#6F4E37]/40 shadow-2xs space-y-2 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Margin kas bersih</span>
             <PieChart className="w-4 h-4 text-[#C88A58]" />
           </div>
           <div className="text-2xl font-extrabold text-[#1C1B18] tracking-tight">
-            76,0%
+            {marginKas}%
           </div>
           <div className="text-[11px] text-[#5C5952]">Pemasukan dikurangi pengeluaran</div>
         </div>
@@ -198,6 +330,11 @@ export function ViewLaporanKeuangan({
                     className="flex-1 flex flex-col items-center h-full justify-end relative group cursor-pointer"
                     onMouseEnter={() => setHoveredTrend(idx)}
                     onMouseLeave={() => setHoveredTrend(null)}
+                    onClick={() => {
+                      const fullMonth = `${item.month} 2026`;
+                      setSelectedPeriod(fullMonth);
+                      showToast("Periode Dipilih", `Menampilkan laporan kas periode ${fullMonth}`);
+                    }}
                   >
                     {/* Hover Tooltip */}
                     {hoveredTrend === idx && (
@@ -248,11 +385,21 @@ export function ViewLaporanKeuangan({
         {/* Right: Rincian Pengeluaran (5 cols) */}
         <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-[#E6E3DC] shadow-2xs flex flex-col justify-between">
           <div>
-            <div className="pb-3 border-b border-[#E6E3DC]/60">
-              <h2 className="text-sm font-bold text-[#1C1B18]">Rincian pengeluaran</h2>
-              <p className="text-xs text-[#8C887F] mt-0.5">
-                Total Rp9.250.000 • Oktober 2026
-              </p>
+            <div className="pb-3 border-b border-[#E6E3DC]/60 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-[#1C1B18]">Rincian pengeluaran</h2>
+                <p className="text-xs text-[#8C887F] mt-0.5">
+                  Total Rp9.250.000 • {selectedPeriod}
+                </p>
+              </div>
+              {selectedCategory && (
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className="text-[11px] font-semibold text-[#6F4E37] hover:underline cursor-pointer"
+                >
+                  Reset
+                </button>
+              )}
             </div>
 
             {/* Stacked Percentage Bar */}
@@ -260,43 +407,65 @@ export function ViewLaporanKeuangan({
               {expenseBreakdown.map((item) => (
                 <div
                   key={item.category}
+                  onClick={() => {
+                    setSelectedCategory(selectedCategory === item.category ? null : item.category);
+                    setTransactionTypeFilter("pengeluaran");
+                  }}
                   style={{
                     width: `${item.percentage}%`,
                     backgroundColor: item.color,
                   }}
-                  className="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full"
-                  title={`${item.category}: ${item.percentage}%`}
+                  className="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full cursor-pointer hover:opacity-80"
+                  title={`${item.category}: ${item.percentage}% (Klik untuk filter)`}
                 />
               ))}
             </div>
 
             {/* Categories List */}
-            <div className="space-y-3.5 mt-4">
-              {expenseBreakdown.map((item) => (
-                <div
-                  key={item.category}
-                  className="flex items-center justify-between text-xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className="w-2.5 h-2.5 rounded-sm shrink-0"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <div>
-                      <div className="font-semibold text-[#1C1B18]">
-                        {item.category}
-                      </div>
-                      <div className="text-[10px] text-[#8C887F]">
-                        {item.percentage}% dari pengeluaran
+            <div className="space-y-2 mt-4">
+              {expenseBreakdown.map((item) => {
+                const isSelected = selectedCategory === item.category;
+
+                return (
+                  <div
+                    key={item.category}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedCategory(null);
+                        showToast("Filter Kategori Dihapus", "Menampilkan semua pengeluaran");
+                      } else {
+                        setSelectedCategory(item.category);
+                        setTransactionTypeFilter("pengeluaran");
+                        showToast("Filter Kategori", `Menampilkan transaksi kategori ${item.category}`);
+                      }
+                    }}
+                    className={`flex items-center justify-between text-xs p-2 rounded-xl transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-[#F4EFEA] border border-[#6F4E37]/30"
+                        : "hover:bg-[#F9F8F6] border border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="w-2.5 h-2.5 rounded-sm shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <div>
+                        <div className="font-semibold text-[#1C1B18]">
+                          {item.category}
+                        </div>
+                        <div className="text-[10px] text-[#8C887F]">
+                          {item.percentage}% dari pengeluaran
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <span className="font-bold font-mono text-[#1C1B18]">
-                    Rp{item.amount.toLocaleString("id-ID")}
-                  </span>
-                </div>
-              ))}
+                    <span className="font-bold font-mono text-[#1C1B18]">
+                      Rp{item.amount.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -313,7 +482,7 @@ export function ViewLaporanKeuangan({
           <div>
             <h2 className="text-sm font-bold text-[#1C1B18]">Transaksi terakhir</h2>
             <p className="text-xs text-[#8C887F] mt-0.5">
-              Pemasukan dan pengeluaran yang membentuk laporan Anda
+              Pemasukan dan pengeluaran yang membentuk laporan Anda {selectedCategory ? `(Filter: ${selectedCategory})` : ""}
             </p>
           </div>
 
@@ -321,7 +490,10 @@ export function ViewLaporanKeuangan({
             <div className="relative">
               <select
                 value={transactionTypeFilter}
-                onChange={(e) => setTransactionTypeFilter(e.target.value)}
+                onChange={(e) => {
+                  setTransactionTypeFilter(e.target.value);
+                  setSelectedCategory(null);
+                }}
                 className="appearance-none pl-3 pr-8 py-1.5 bg-[#F9F8F6] rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] focus:outline-none cursor-pointer"
               >
                 <option value="all">Semua transaksi</option>
@@ -332,7 +504,11 @@ export function ViewLaporanKeuangan({
             </div>
 
             <button
-              onClick={() => {}}
+              onClick={() => {
+                setTransactionTypeFilter("all");
+                setSelectedCategory(null);
+                showToast("Reset Filter", "Menampilkan seluruh riwayat transaksi");
+              }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E6E3DC] bg-white text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] transition-colors cursor-pointer"
             >
               <span>Lihat semua</span>
@@ -401,7 +577,7 @@ export function ViewLaporanKeuangan({
       <div className="flex items-start sm:items-center gap-2 text-xs text-[#5C5952] pt-1">
         <Info className="w-4 h-4 text-[#8C887F] shrink-0 mt-0.5 sm:mt-0" />
         <span>
-          Tagihan belum lunas sebesar Rp4.500.000 tidak termasuk dalam pemasukan.
+          Tagihan belum lunas sebesar Rp{pendingAmount.toLocaleString("id-ID")} tidak termasuk dalam pemasukan.
           Deposit penghuni dicatat terpisah.
         </span>
       </div>

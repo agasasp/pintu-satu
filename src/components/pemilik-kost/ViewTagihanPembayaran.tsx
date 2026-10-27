@@ -12,85 +12,48 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+import { useDashboard } from "./DashboardContext";
+import { InvoiceItem } from "./types";
+import { FileText, X, Check } from "lucide-react";
+
 interface ViewTagihanPembayaranProps {
-  onOpenRecordPayment: () => void;
-  onSendWhatsappInvoice: (name: string, room: string, phone: string, amount: string) => void;
+  onOpenRecordPayment?: () => void;
+  onSendWhatsappInvoice?: (name: string, room: string, phone: string, amount: string) => void;
 }
 
 export function ViewTagihanPembayaran({
   onOpenRecordPayment,
   onSendWhatsappInvoice,
 }: ViewTagihanPembayaranProps) {
+  const {
+    invoices,
+    markInvoiceAsPaid,
+    openRecordPayment,
+    sendWhatsappReminder,
+    sendBulkWhatsappReminder,
+    showToast,
+  } = useDashboard();
+
   const [activeTab, setActiveTab] = useState<
     "semua" | "menunggu" | "terlambat" | "lunas"
   >("semua");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeReceipt, setActiveReceipt] = useState<InvoiceItem | null>(null);
 
-  const invoices = [
-    {
-      id: "INV-2026-001",
-      room: "A-05",
-      tenant: "Andi Saputra",
-      phone: "0821-4567-8901",
-      amount: "Rp1.500.000",
-      dueDate: "20 Okt 2026",
-      status: "terlambat",
-      statusLabel: "Terlambat",
-    },
-    {
-      id: "INV-2026-002",
-      room: "A-03",
-      tenant: "Dewi Lestari",
-      phone: "0857-1122-3344",
-      amount: "Rp1.500.000",
-      dueDate: "28 Okt 2026",
-      status: "menunggu",
-      statusLabel: "Belum dibayar",
-    },
-    {
-      id: "INV-2026-003",
-      room: "A-04",
-      tenant: "Fajar Ramadhan",
-      phone: "0812-8899-0011",
-      amount: "Rp1.500.000",
-      dueDate: "28 Okt 2026",
-      status: "menunggu",
-      statusLabel: "Belum dibayar",
-    },
-    {
-      id: "INV-2026-004",
-      room: "A-01",
-      tenant: "Putri Aprilia",
-      phone: "0812-3456-7890",
-      amount: "Rp1.500.000",
-      dueDate: "25 Okt 2026",
-      status: "lunas",
-      statusLabel: "Lunas",
-      paidAt: "26 Okt 2026, 09.12 WIB via BCA",
-    },
-    {
-      id: "INV-2026-005",
-      room: "A-02",
-      tenant: "Rizky Maulana",
-      phone: "0813-2234-5678",
-      amount: "Rp1.500.000",
-      dueDate: "25 Okt 2026",
-      status: "lunas",
-      statusLabel: "Lunas",
-      paidAt: "25 Okt 2026, 14.20 WIB via QRIS",
-    },
-    {
-      id: "INV-2026-006",
-      room: "B-01",
-      tenant: "Nadia Salsabila",
-      phone: "0813-9090-1212",
-      amount: "Rp1.750.000",
-      dueDate: "25 Okt 2026",
-      status: "lunas",
-      statusLabel: "Lunas",
-      paidAt: "24 Okt 2026, 18.00 WIB via BCA",
-    },
-  ];
+  // Dynamic calculations
+  const totalInvoicesCount = invoices.length;
+  const lunasInvoices = invoices.filter((i) => i.status === "lunas");
+  const menungguInvoices = invoices.filter((i) => i.status === "menunggu");
+  const terlambatInvoices = invoices.filter((i) => i.status === "terlambat");
+
+  const totalAmount = invoices.reduce((acc, i) => acc + (i.amountNumber || 0), 0);
+  const lunasAmount = lunasInvoices.reduce((acc, i) => acc + (i.amountNumber || 0), 0);
+  const pendingAmount = invoices
+    .filter((i) => i.status !== "lunas")
+    .reduce((acc, i) => acc + (i.amountNumber || 0), 0);
+  const terlambatAmount = terlambatInvoices.reduce((acc, i) => acc + (i.amountNumber || 0), 0);
+
+  const lunasPercent = totalInvoicesCount > 0 ? Math.round((lunasInvoices.length / totalInvoicesCount) * 100) : 0;
 
   const filteredInvoices = invoices.filter((inv) => {
     if (activeTab === "menunggu" && inv.status !== "menunggu") return false;
@@ -102,7 +65,8 @@ export function ViewTagihanPembayaran({
       return (
         inv.tenant.toLowerCase().includes(q) ||
         inv.room.toLowerCase().includes(q) ||
-        inv.phone.includes(q)
+        inv.phone.includes(q) ||
+        inv.id.toLowerCase().includes(q)
       );
     }
     return true;
@@ -123,14 +87,13 @@ export function ViewTagihanPembayaran({
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() =>
-              onSendWhatsappInvoice(
-                "Semua Penyewa Tertunda",
-                "Massal",
-                "WA Massal",
-                "Rp4.500.000"
-              )
-            }
+            onClick={() => {
+              if (onSendWhatsappInvoice) {
+                onSendWhatsappInvoice("Semua Penyewa Tertunda", "Massal", "WA Massal", `Rp${pendingAmount.toLocaleString("id-ID")}`);
+              } else {
+                sendBulkWhatsappReminder();
+              }
+            }}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] transition-colors cursor-pointer shadow-2xs"
           >
             <Send className="w-3.5 h-3.5 text-[#6F4E37]" />
@@ -138,7 +101,10 @@ export function ViewTagihanPembayaran({
           </button>
 
           <button
-            onClick={onOpenRecordPayment}
+            onClick={() => {
+              if (onOpenRecordPayment) onOpenRecordPayment();
+              else openRecordPayment();
+            }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#6F4E37] hover:bg-[#563B28] text-white text-xs font-semibold transition-all shadow-xs cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
@@ -147,55 +113,87 @@ export function ViewTagihanPembayaran({
         </div>
       </div>
 
-      {/* 2. Top 4 Stat Cards */}
+      {/* 2. Top 4 Stat Cards (Clickable Filter) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => setActiveTab("semua")}
+          className={`p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.01] ${
+            activeTab === "semua"
+              ? "bg-[#F4EFEA]/50 border-[#6F4E37] ring-1 ring-[#6F4E37]"
+              : "bg-white border-[#E6E3DC] hover:border-[#6F4E37]/50"
+          }`}
+          title="Klik untuk filter semua tagihan"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Total tagihan bulan ini</span>
             <Receipt className="w-4 h-4 text-[#6F4E37]" />
           </div>
           <div className="text-2xl font-extrabold text-[#1C1B18] tracking-tight">
-            Rp43.000.000
+            Rp{totalAmount.toLocaleString("id-ID")}
           </div>
-          <div className="text-[11px] text-[#5C5952]">28 tagihan diterbitkan</div>
+          <div className="text-[11px] text-[#5C5952]">{totalInvoicesCount} tagihan diterbitkan</div>
         </div>
 
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => setActiveTab("lunas")}
+          className={`p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.01] ${
+            activeTab === "lunas"
+              ? "bg-emerald-50/60 border-emerald-600 ring-1 ring-emerald-600"
+              : "bg-white border-[#E6E3DC] hover:border-emerald-500/50"
+          }`}
+          title="Klik untuk filter tagihan lunas"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Sudah lunas</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-extrabold text-[#1C1B18] tracking-tight">
-            Rp38.500.000
+            Rp{lunasAmount.toLocaleString("id-ID")}
           </div>
           <div className="text-[11px] text-emerald-700 font-semibold">
-            25 tagihan lunas (89%)
+            {lunasInvoices.length} tagihan lunas ({lunasPercent}%)
           </div>
         </div>
 
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => setActiveTab("menunggu")}
+          className={`p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.01] ${
+            activeTab === "menunggu"
+              ? "bg-amber-50/60 border-amber-600 ring-1 ring-amber-600"
+              : "bg-white border-[#E6E3DC] hover:border-amber-500/50"
+          }`}
+          title="Klik untuk filter belum lunas"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Belum lunas</span>
             <Clock className="w-4 h-4 text-[#C88A58]" />
           </div>
           <div className="text-2xl font-extrabold text-[#1C1B18] tracking-tight">
-            Rp4.500.000
+            Rp{pendingAmount.toLocaleString("id-ID")}
           </div>
           <div className="text-[11px] text-amber-700 font-medium">
-            3 tagihan menunggu bayar
+            {menungguInvoices.length} tagihan menunggu bayar
           </div>
         </div>
 
-        <div className="bg-white p-4.5 rounded-2xl border border-[#E6E3DC] shadow-2xs space-y-2">
+        <div
+          onClick={() => setActiveTab("terlambat")}
+          className={`p-4.5 rounded-2xl border transition-all cursor-pointer shadow-2xs space-y-2 hover:scale-[1.01] ${
+            activeTab === "terlambat"
+              ? "bg-red-50/60 border-red-600 ring-1 ring-red-600"
+              : "bg-white border-[#E6E3DC] hover:border-red-500/50"
+          }`}
+          title="Klik untuk filter terlambat"
+        >
           <div className="flex items-center justify-between text-[#5C5952]">
             <span className="text-xs font-medium">Melewati jatuh tempo</span>
             <AlertCircle className="w-4 h-4 text-red-600" />
           </div>
           <div className="text-2xl font-extrabold text-[#1C1B18] tracking-tight">
-            1 tagihan
+            {terlambatInvoices.length} tagihan
           </div>
           <div className="text-[11px] text-red-700 font-semibold">
-            Rp1.500.000 • Kamar A-05
+            Rp{terlambatAmount.toLocaleString("id-ID")} tertunda
           </div>
         </div>
       </div>
@@ -212,7 +210,7 @@ export function ViewTagihanPembayaran({
                 : "hover:text-[#1C1B18]"
             }`}
           >
-            <span>Semua tagihan (28)</span>
+            <span>Semua tagihan ({totalInvoicesCount})</span>
             {activeTab === "semua" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6F4E37] rounded-full" />
             )}
@@ -226,7 +224,7 @@ export function ViewTagihanPembayaran({
                 : "hover:text-[#1C1B18]"
             }`}
           >
-            <span>Menunggu pembayaran (2)</span>
+            <span>Menunggu pembayaran ({menungguInvoices.length})</span>
             {activeTab === "menunggu" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6F4E37] rounded-full" />
             )}
@@ -240,7 +238,7 @@ export function ViewTagihanPembayaran({
                 : "hover:text-[#1C1B18]"
             }`}
           >
-            <span>Terlambat (1)</span>
+            <span>Terlambat ({terlambatInvoices.length})</span>
             {activeTab === "terlambat" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6F4E37] rounded-full" />
             )}
@@ -254,7 +252,7 @@ export function ViewTagihanPembayaran({
                 : "hover:text-[#1C1B18]"
             }`}
           >
-            <span>Lunas (25)</span>
+            <span>Lunas ({lunasInvoices.length})</span>
             {activeTab === "lunas" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#6F4E37] rounded-full" />
             )}
@@ -343,24 +341,41 @@ export function ViewTagihanPembayaran({
 
                   <td className="py-3.5 px-5 text-right">
                     {inv.status !== "lunas" ? (
-                      <button
-                        onClick={() =>
-                          onSendWhatsappInvoice(
-                            inv.tenant,
-                            inv.room,
-                            inv.phone,
-                            inv.amount
-                          )
-                        }
-                        className="px-3 py-1.5 rounded-xl bg-[#6F4E37] hover:bg-[#563B28] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Kirim WA</span>
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            openRecordPayment({
+                              roomNumber: inv.room,
+                              tenantName: inv.tenant,
+                              amount: inv.amountNumber,
+                            });
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] cursor-pointer"
+                        >
+                          Catat Lunas
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (onSendWhatsappInvoice) {
+                              onSendWhatsappInvoice(inv.tenant, inv.room, inv.phone, inv.amount);
+                            } else {
+                              sendWhatsappReminder(inv.tenant, inv.room, inv.phone, inv.amount);
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[#6F4E37] hover:bg-[#563B28] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Kirim WA</span>
+                        </button>
+                      </div>
                     ) : (
-                      <span className="text-[11px] text-[#8C887F]">
-                        Terverifikasi
-                      </span>
+                      <button
+                        onClick={() => setActiveReceipt(inv)}
+                        className="px-3 py-1.5 rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-[#6F4E37]" />
+                        <span>Kuitansi</span>
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -369,6 +384,76 @@ export function ViewTagihanPembayaran({
           </table>
         </div>
       </div>
+
+      {/* Kuitansi Modal */}
+      {activeReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E6E3DC] shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E3DC]">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                  <Check className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-base text-[#1C1B18]">
+                  Kuitansi Pembayaran
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveReceipt(null)}
+                className="p-1 rounded-lg text-[#8C887F] hover:text-[#1C1B18]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#F9F8F6] border border-[#E6E3DC] space-y-3 text-xs">
+              <div className="flex justify-between">
+                <span className="text-[#8C887F]">No. Invoice</span>
+                <span className="font-mono font-bold text-[#1C1B18]">{activeReceipt.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#8C887F]">Penghuni</span>
+                <span className="font-bold text-[#1C1B18]">{activeReceipt.tenant}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#8C887F]">Kamar</span>
+                <span className="font-bold text-[#1C1B18]">{activeReceipt.room}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#8C887F]">Waktu Pembayaran</span>
+                <span className="font-medium text-[#1C1B18]">{activeReceipt.paidAt || "26 Okt 2026, 09.12 WIB"}</span>
+              </div>
+              <div className="h-px bg-[#E6E3DC]" />
+              <div className="flex justify-between text-sm">
+                <span className="font-bold text-[#1C1B18]">Total Dibayar</span>
+                <span className="font-extrabold text-[#6F4E37] font-mono">{activeReceipt.amount}</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setActiveReceipt(null)}
+                className="px-4 py-2 rounded-xl border border-[#E6E3DC] text-xs font-semibold text-[#1C1B18] hover:bg-[#F9F8F6] cursor-pointer"
+              >
+                Tutup
+              </button>
+              <button
+                onClick={() => {
+                  showToast(
+                    "Unduh Kuitansi",
+                    `Kuitansi resmi ${activeReceipt.id} (${activeReceipt.tenant}) berhasil diunduh dalam format PDF.`
+                  );
+                  setActiveReceipt(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-[#6F4E37] text-white text-xs font-semibold hover:bg-[#563B28] inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Unduh PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

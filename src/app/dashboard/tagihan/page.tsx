@@ -5,7 +5,7 @@ import { ViewTagihanPembayaran } from "@/components/pemilik-kost/ViewTagihanPemb
 import { useDashboard } from "@/components/pemilik-kost/DashboardContext";
 
 export default function TagihanPage() {
-  const { openRecordPayment, showToast } = useDashboard();
+  const { openRecordPayment, sendWhatsappReminder } = useDashboard();
 
   useEffect(() => {
     document.title = "Tagihan & Pembayaran • Kost Cemara | Pintu Satu";
@@ -14,11 +14,8 @@ export default function TagihanPage() {
   return (
     <ViewTagihanPembayaran
       onOpenRecordPayment={openRecordPayment}
-      onSendWhatsappInvoice={(name, room, _phone, amount) => {
-        showToast(
-          "WhatsApp Invoice Terkirim",
-          `Tagihan sewa ${amount} untuk ${name} (Kamar ${room}) telah terkirim.`
-        );
+      onSendWhatsappInvoice={(name, room, phone, amount) => {
+        sendWhatsappReminder(name, room, phone, amount);
       }}
     />
   );

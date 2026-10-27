@@ -11,15 +11,23 @@ import { ComproPricing } from "@/components/compro/ComproPricing";
 import { ComproClosingBanner } from "@/components/compro/ComproClosingBanner";
 import { ComproFooter } from "@/components/compro/ComproFooter";
 import { ComproTrialModal } from "@/components/compro/ComproTrialModal";
+import { ComproPaidModal } from "@/components/compro/ComproPaidModal";
 import { ToastNotification } from "@/components/shared/ToastNotification";
+import type { PackageItem } from "@/components/compro/ComproPricing";
 
 /**
  * PINTU SATU - COMPANY PROFILE (COMPRO)
  * Landing page utama untuk calon pelanggan & pengunjung publik.
  */
 export default function PintuSatuLanding() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState("Paket Juragan Pro");
+  // Modal Trial State
+  const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
+  const [selectedTrialPlan, setSelectedTrialPlan] = useState("Paket Trial Rintisan");
+  const [selectedTrialPackageId, setSelectedTrialPackageId] = useState<number | undefined>(undefined);
+
+  // Modal Paid State
+  const [isPaidModalOpen, setIsPaidModalOpen] = useState(false);
+  const [selectedPaidPlan, setSelectedPaidPlan] = useState<PackageItem | null>(null);
 
   // Toast state
   const [toast, setToast] = useState<{ show: boolean; title: string; desc: string }>({
@@ -35,28 +43,40 @@ export default function PintuSatuLanding() {
     }, 3500);
   };
 
-  const handleOpenModal = (planName: string = "Uji Coba Gratis") => {
-    setSelectedPlan(planName);
-    setIsModalOpen(true);
+  // Handler buka modal trial (dari navbar, hero, cta banner, dll)
+  const handleOpenTrialModal = (planName: string = "Paket Trial Rintisan", packageId?: number) => {
+    setSelectedTrialPlan(planName);
+    setSelectedTrialPackageId(packageId);
+    setIsTrialModalOpen(true);
+  };
+
+  // Handler seleksi paket dari kartu pricing
+  const handleSelectPackage = (pkg: PackageItem) => {
+    if (pkg.billing_cycle === "trial" || pkg.price === 0) {
+      handleOpenTrialModal(pkg.name, pkg.id);
+    } else {
+      setSelectedPaidPlan(pkg);
+      setIsPaidModalOpen(true);
+    }
   };
 
   const handleModalSubmitSuccess = (ownerName: string, kostName: string) => {
-    setIsModalOpen(false);
+    setIsTrialModalOpen(false);
     showToast(
       "Pendaftaran Diterima",
-      `Terima kasih ${ownerName || "Bpk/Ibu"}, akses uji coba 14 hari untuk ${
+      `Terima kasih ${ownerName || "Bpk/Ibu"}, akun trial untuk ${
         kostName || "properti Anda"
-      } telah disiapkan ke WhatsApp.`
+      } telah disiapkan.`
     );
   };
 
   return (
     <div className="bg-white text-[#1C1B18] font-sans antialiased min-h-screen selection:bg-[#6F4E37]/15 selection:text-[#1C1B18]">
       {/* 1. Header & Navigation */}
-      <ComproNavbar onOpenTrialModal={handleOpenModal} />
+      <ComproNavbar onOpenTrialModal={handleOpenTrialModal} />
 
       {/* 2. Hero Section with 3D Floating Visual */}
-      <ComproHero onOpenTrialModal={handleOpenModal} />
+      <ComproHero onOpenTrialModal={handleOpenTrialModal} />
 
       {/* 3. Interactive Live Dashboard Preview */}
       <ComproDashboardPreview onShowToast={showToast} />
@@ -68,23 +88,37 @@ export default function PintuSatuLanding() {
       <ComproFeatures />
 
       {/* 6. Alur Penggunaan (3 Steps) */}
-      <ComproSteps onOpenTrialModal={handleOpenModal} />
+      <ComproSteps onOpenTrialModal={handleOpenTrialModal} />
 
       {/* 7. Paket Berlangganan (Pricing) */}
-      <ComproPricing onOpenTrialModal={handleOpenModal} />
+      <ComproPricing
+        onOpenTrialModal={handleOpenTrialModal}
+        onSelectPackage={handleSelectPackage}
+      />
 
       {/* 8. Closing CTA Banner */}
-      <ComproClosingBanner onOpenTrialModal={handleOpenModal} />
+      <ComproClosingBanner onOpenTrialModal={handleOpenTrialModal} />
 
       {/* 9. Footer */}
       <ComproFooter />
 
       {/* 10. Trial Registration Modal */}
       <ComproTrialModal
-        isOpen={isModalOpen}
-        selectedPlan={selectedPlan}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isTrialModalOpen}
+        selectedPlan={selectedTrialPlan}
+        packageId={selectedTrialPackageId}
+        onClose={() => setIsTrialModalOpen(false)}
         onSubmitSuccess={handleModalSubmitSuccess}
+      />
+
+      {/* 11. Paid Registration Modal (Midtrans Snap) */}
+      <ComproPaidModal
+        isOpen={isPaidModalOpen}
+        selectedPlan={selectedPaidPlan?.name || "Paket Berbayar"}
+        packageId={selectedPaidPlan?.id}
+        planPrice={selectedPaidPlan?.price}
+        billingCycle={selectedPaidPlan?.billing_cycle}
+        onClose={() => setIsPaidModalOpen(false)}
       />
 
       {/* Toast Notification */}
